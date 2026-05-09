@@ -123,7 +123,7 @@ async function deriveKey(passphrase: string, salt: Uint8Array) {
     ["deriveKey"],
   );
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: PBKDF_ITERS, hash: "SHA-256" },
+    { name: "PBKDF2", salt: salt as BufferSource, iterations: PBKDF_ITERS, hash: "SHA-256" },
     baseKey,
     { name: "AES-GCM", length: 256 },
     false,
@@ -172,12 +172,12 @@ export async function exportEncryptedVault(passphrase: string): Promise<Blob> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LEN));
   const key = await deriveKey(passphrase, salt);
   const cipher = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, zipped),
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as BufferSource }, key, zipped as BufferSource),
   );
 
   // File layout: MAGIC(6) | salt(16) | iv(12) | ciphertext
   const file = concatBytes(enc.encode(MAGIC), salt, iv, cipher);
-  return new Blob([file], { type: "application/octet-stream" });
+  return new Blob([file as BlobPart], { type: "application/octet-stream" });
 }
 
 export async function importEncryptedVault(
@@ -200,7 +200,7 @@ export async function importEncryptedVault(
   const key = await deriveKey(passphrase, salt);
   let plain: ArrayBuffer;
   try {
-    plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, cipher);
+    plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as BufferSource }, key, cipher as BufferSource);
   } catch {
     throw new Error("Wrong passphrase or corrupted file");
   }
