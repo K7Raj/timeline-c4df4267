@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Download, Upload, Wifi, FileJson, Loader2 } from "lucide-react";
+import { Download, Upload, ShieldCheck, Loader2, Share2, KeyRound } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,9 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { downloadBundle, importBundle } from "@/lib/share-store";
+import {
+  exportEncryptedVault,
+  importEncryptedVault,
+  importLegacyJson,
+  shareOrDownload,
+  suggestedFileName,
+} from "@/lib/share-store";
 
 interface ShareDialogProps {
   open: boolean;
@@ -18,15 +25,25 @@ interface ShareDialogProps {
 
 export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
   const [busy, setBusy] = useState<"export" | "import" | null>(null);
+  const [pass, setPass] = useState("");
+  const [importPass, setImportPass] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
+    if (pass.length < 4) {
+      toast({ title: "Passphrase too short", description: "Use at least 4 characters.", variant: "destructive" });
+      return;
+    }
     setBusy("export");
     try {
-      await downloadBundle();
+      const blob = await exportEncryptedVault(pass);
+      const result = await shareOrDownload(blob, suggestedFileName());
       toast({
-        title: "Vault exported ✨",
-        description: "Send the file to the other phone via your hotspot share.",
+        title: "Vault ready 🔐",
+        description:
+          result.method === "native"
+            ? "Pick Bluetooth, AirDrop or Nearby Share from the share sheet."
+            : "File downloaded. Send it via Bluetooth, AirDrop, or any file-share app.",
       });
     } catch (e) {
       toast({ title: "Export failed", description: String(e), variant: "destructive" });
@@ -35,13 +52,22 @@ export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
     }
   };
 
+  const handlePick = () => fileRef.current?.click();
+
   const handleImport: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setBusy("import");
     try {
-      await importBundle(file, "replace");
+      if (file.name.toLowerCase().endsWith(".json")) {
+        await importLegacyJson(file);
+      } else {
+        if (importPass.length < 4) {
+          throw new Error("Enter the passphrase used on the sender device first.");
+        }
+        await importEncryptedVault(file, importPass, "replace");
+      }
       toast({ title: "Vault imported", description: "Reloading…" });
       setTimeout(() => window.location.reload(), 600);
     } catch (err) {
@@ -56,68 +82,96 @@ export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
       <DialogContent className="max-w-md bg-gradient-card border-border rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Wifi className="w-5 h-5 text-primary" /> Share vault
+            <ShieldCheck className="w-5 h-5 text-primary" /> Encrypted vault share
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            Export everything (timeline, multimedia, folders) to a single file,
-            then send it to the other phone over your WiFi hotspot, AirDrop, or
-            Quick Share. On the other device, open this dialog and tap Import.
+            Pack the entire app — users, settings, timeline, media, wishes —
+            into a single encrypted <code>.vault</code> file. Share it over
+            Bluetooth, AirDrop, or Nearby Share. The other device unlocks it
+            with the same passphrase.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3 mt-2">
-          <button
-            disabled={!!busy}
-            onClick={handleExport}
-            className="group flex items-center gap-3 p-4 rounded-2xl border border-border bg-secondary/40 hover:border-primary/50 hover:bg-secondary/70 transition text-left disabled:opacity-60"
-          >
-            <div className="w-11 h-11 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0">
+        <div className="grid gap-4 mt-2">
+          {/* EXPORT */}
+          <div className="rounded-2xl border border-border bg-secondary/40 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Share2 className="w-4 h-4 text-primary" />
+              <p className="font-semibold text-sm">Send to another device</p>
+            </div>
+            <Label htmlFor="vault-pass" className="text-xs flex items-center gap-1">
+              <KeyRound className="w-3 h-3" /> Passphrase
+            </Label>
+            <Input
+              id="vault-pass"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Min. 4 characters"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              className="mt-1 h-9"
+              disabled={!!busy}
+            />
+            <button
+              disabled={!!busy}
+              onClick={handleExport}
+              className="mt-3 w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-gradient-primary text-primary-foreground font-semibold text-sm disabled:opacity-60"
+            >
               {busy === "export" ? (
-                <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Download className="w-5 h-5 text-primary-foreground" />
+                <Download className="w-4 h-4" />
               )}
-            </div>
-            <div className="min-w-0">
-              <p className="font-semibold text-sm">Export vault</p>
-              <p className="text-xs text-muted-foreground">
-                Save a portable .json bundle (includes media)
-              </p>
-            </div>
-          </button>
+              Encrypt & share
+            </button>
+            <p className="mt-2 text-[0.7rem] text-muted-foreground leading-relaxed">
+              On the share sheet pick <b>Bluetooth</b>, <b>AirDrop</b>, or
+              <b> Nearby&nbsp;Share</b>. The receiver also needs this app
+              installed and the same passphrase.
+            </p>
+          </div>
 
-          <button
-            disabled={!!busy}
-            onClick={() => fileRef.current?.click()}
-            className="group flex items-center gap-3 p-4 rounded-2xl border border-border bg-secondary/40 hover:border-primary/50 hover:bg-secondary/70 transition text-left disabled:opacity-60"
-          >
-            <div className="w-11 h-11 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0">
+          {/* IMPORT */}
+          <div className="rounded-2xl border border-border bg-secondary/40 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Upload className="w-4 h-4 text-primary" />
+              <p className="font-semibold text-sm">Receive on this device</p>
+            </div>
+            <Label htmlFor="vault-import-pass" className="text-xs flex items-center gap-1">
+              <KeyRound className="w-3 h-3" /> Passphrase from sender
+            </Label>
+            <Input
+              id="vault-import-pass"
+              type="password"
+              autoComplete="off"
+              placeholder="Same passphrase used on sender"
+              value={importPass}
+              onChange={(e) => setImportPass(e.target.value)}
+              className="mt-1 h-9"
+              disabled={!!busy}
+            />
+            <button
+              disabled={!!busy}
+              onClick={handlePick}
+              className="mt-3 w-full flex items-center justify-center gap-2 h-10 rounded-xl border border-border bg-background/40 hover:bg-background/70 font-semibold text-sm disabled:opacity-60"
+            >
               {busy === "import" ? (
-                <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Upload className="w-5 h-5 text-primary-foreground" />
+                <Upload className="w-4 h-4" />
               )}
-            </div>
-            <div className="min-w-0">
-              <p className="font-semibold text-sm">Import vault</p>
-              <p className="text-xs text-muted-foreground">
-                Replace local data with a received bundle
-              </p>
-            </div>
-          </button>
-
-          <p className="text-[0.7rem] text-muted-foreground flex items-start gap-2 mt-1 leading-relaxed">
-            <FileJson className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-            Tip: connect both phones to the same WiFi hotspot, then use any
-            file-sharing app (e.g. ShareIt, Quick Share) to transfer the
-            exported .json file.
-          </p>
+              Choose .vault file
+            </button>
+            <p className="mt-2 text-[0.7rem] text-muted-foreground leading-relaxed">
+              Existing data on this device will be replaced.
+            </p>
+          </div>
         </div>
 
         <input
           ref={fileRef}
           type="file"
-          accept="application/json,.json"
+          accept=".vault,application/octet-stream,application/json,.json"
           className="hidden"
           onChange={handleImport}
         />

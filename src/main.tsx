@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { bootStorageBridge } from "@/lib/storage-bridge";
 
 // Apply persisted theme before first paint to avoid mode-flicker bugs
 try {
@@ -11,4 +12,8 @@ try {
   /* ignore */
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Hydrate any tracked keys from IndexedDB (covers fresh devices that just
+// imported a vault) and start mirroring future writes. Then mount React.
+void bootStorageBridge().finally(() => {
+  createRoot(document.getElementById("root")!).render(<App />);
+});
