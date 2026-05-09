@@ -133,13 +133,21 @@ async function deriveKey(passphrase: string, salt: Uint8Array) {
 
 function concatBytes(...parts: Uint8Array[]): Uint8Array {
   const total = parts.reduce((n, p) => n + p.length, 0);
-  const out = new Uint8Array(total);
+  const out = new Uint8Array(new ArrayBuffer(total));
   let off = 0;
   for (const p of parts) {
     out.set(p, off);
     off += p.length;
   }
   return out;
+}
+
+// Copy any Uint8Array view into a fresh ArrayBuffer-backed one so it
+// satisfies `BufferSource` (TS dislikes ArrayBufferLike from generic views).
+function toBufSource(u: Uint8Array): Uint8Array {
+  const fresh = new Uint8Array(new ArrayBuffer(u.byteLength));
+  fresh.set(u);
+  return fresh;
 }
 
 // ---- Public API ----
