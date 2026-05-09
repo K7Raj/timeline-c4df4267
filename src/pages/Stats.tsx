@@ -1,33 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video, Sparkles, History } from "lucide-react";
+import {
+  ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
+  Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
-import { getEntries, type TimelineEntry } from "@/lib/timeline-store";
+import { getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
 
-interface Bucket {
-  key: string;
-  label: string;
-  count: number;
-}
+interface Bucket { key: string; label: string; count: number }
 
 const Stats = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [firstMedia, setFirstMedia] = useState<{ url: string; kind: string } | null>(null);
+  const [lastMedia, setLastMedia] = useState<{ url: string; kind: string } | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/", { replace: true });
-      return;
-    }
+    if (!user) { navigate("/", { replace: true }); return; }
     getEntries(user.id).then(setEntries);
   }, [user, navigate]);
 
   const summary = useMemo(() => {
-    if (entries.length === 0) {
-      return null;
-    }
+    if (entries.length === 0) return null;
     const sorted = [...entries].sort((a, b) => a.date - b.date);
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
@@ -38,7 +34,6 @@ const Stats = () => {
     const videos = withMedia.filter((e) => e.mediaKind === "video").length;
     const multiDay = sorted.filter((e) => e.endDate && e.endDate > e.date).length;
 
-    // Category buckets via title keywords
     const cats: Record<string, RegExp> = {
       Travel: /travel|trip|visit|drive|flight|station|airport|tour/i,
       Birthday: /birth/i,
@@ -47,14 +42,12 @@ const Stats = () => {
       Celebration: /celebr|party|surprise/i,
     };
     const buckets: Bucket[] = Object.entries(cats).map(([label, re]) => ({
-      key: label,
-      label,
+      key: label, label,
       count: sorted.filter((e) => re.test(e.title) || re.test(e.content)).length,
     }));
     const other = sorted.length - buckets.reduce((a, b) => a + b.count, 0);
     if (other > 0) buckets.push({ key: "Other", label: "Other", count: other });
 
-    // Per month
     const months = new Map<string, number>();
     sorted.forEach((e) => {
       const d = new Date(e.date);
@@ -68,48 +61,146 @@ const Stats = () => {
     );
 
     return {
-      total: sorted.length,
-      span,
-      days,
-      images,
-      videos,
-      multiDay,
+      total: sorted.length, span, days, images, videos, multiDay,
       buckets: buckets.filter((b) => b.count > 0).sort((a, b) => b.count - a.count),
-      first,
-      last,
-      monthList,
-      peakMonth,
-      sorted,
+      first, last, monthList, peakMonth, sorted,
     };
   }, [entries]);
 
-  // "On this day" – memories that share today's day+month from any year
-  const onThisDay = useMemo(() => {
+  // Resolve random media for first/last cards (if the entry has media)
+  useEffect(() => {
+    let live = true;
+    const pickRandomWithMedia = (list: TimelineEntry[], fallback: TimelineEntry) => {
+      const withMedia = list.filter((e) => e.mediaKind);
+      if (withMedia.length === 0) return fallback;
+      return withMedia[Math.floor(Math.random() * withMedia.length)];
+    };
+    (async () => {
+      if (!summary) return;
+      // First card: pick a random media entry from the EARLIEST 5 entries
+      const earliest = summary.sorted.slice(0, 5);
+      const firstPick = pickRandomWithMedia(earliest, summary.first);
+      const fUrl = firstPick.mediaKind ? await getEntryBlobUrl(firstPick.id) : null;
+      if (live) setFirstMedia(fUrl ? { url: fUrl, kind: firstPick.mediaKind! } : null);
+
+      const latest = summary.sorted.slice(-5);
+      const lastPick = pickRandomWithMedia(latest, summary.last);
+      const lUrl = lastPick.mediaKind ? await getEntryBlobUrl(lastPick.id) : null;
+      if (live) setLastMedia(lUrl ? { url: lUrl, kind: lastPick.mediaKind! } : null);
+    })();
+    return () => {
+      live = false;
+      if (firstMedia) URL.revokeObjectURL(firstMedia.url);
+      if (lastMedia) URL.revokeObjectURL(lastMedia.url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summary]);
+
+  // ──────────────────────────── Insights ────────────────────────────
+
+  const today = new Date();
+
+  // Same date across months/years (matches day-of-month, ANY month)
+  const sameDateMatches = useMemo(() => {
+    if (!summary) return [] as { monthLabel: string; entries: TimelineEntry[] }[];
+    const dom = today.getDate();
+    const groups = new Map<string, TimelineEntry[]>();
+    summary.sorted.forEach((e) => {
+      const d = new Date(e.date);
+      if (d.getDate() !== dom) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const list = groups.get(key) ?? [];
+      list.push(e);
+      groups.set(key, list);
+    });
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([k, list]) => {
+        const [y, m] = k.split("-").map(Number);
+        return {
+          monthLabel: new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+            month: "long", year: "numeric",
+          }),
+          entries: list,
+        };
+      });
+  }, [summary, today]);
+
+  const onThisDayExact = useMemo(() => {
     if (!summary) return [] as TimelineEntry[];
-    const today = new Date();
     return summary.sorted.filter((e) => {
       const d = new Date(e.date);
       return d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
     });
+  }, [summary, today]);
+
+  const lastWeek = useMemo(() => {
+    if (!summary) return [] as TimelineEntry[];
+    const cutoff = Date.now() - 7 * 86400000;
+    return summary.sorted.filter((e) => e.date >= cutoff).sort((a, b) => b.date - a.date);
   }, [summary]);
+
+  // Current daily streak (consecutive days ending today with at least one entry)
+  const streak = useMemo(() => {
+    if (!summary) return 0;
+    const dayKeys = new Set(summary.sorted.map((e) => new Date(e.date).toDateString()));
+    let n = 0;
+    const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    while (dayKeys.has(cursor.toDateString())) {
+      n++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return n;
+  }, [summary, today]);
+
+  const longestGap = useMemo(() => {
+    if (!summary || summary.sorted.length < 2) return 0;
+    let max = 0;
+    for (let i = 1; i < summary.sorted.length; i++) {
+      const gap = Math.round((summary.sorted[i].date - summary.sorted[i - 1].date) / 86400000);
+      if (gap > max) max = gap;
+    }
+    return max;
+  }, [summary]);
+
+  const upcomingAnniversaries = useMemo(() => {
+    if (!summary) return [] as { entry: TimelineEntry; inDays: number; years: number }[];
+    const out: { entry: TimelineEntry; inDays: number; years: number }[] = [];
+    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    summary.sorted.forEach((e) => {
+      const d = new Date(e.date);
+      let next = new Date(today.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      if (next < todayMid) next = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate()).getTime();
+      const inDays = Math.round((next - todayMid) / 86400000);
+      if (inDays <= 60) {
+        const years = new Date(next).getFullYear() - d.getFullYear();
+        out.push({ entry: e, inDays, years });
+      }
+    });
+    return out.sort((a, b) => a.inDays - b.inDays).slice(0, 4);
+  }, [summary, today]);
 
   const ago = (ts: number) => {
     const diff = Date.now() - ts;
     if (diff < 0) return "in the future";
     const h = Math.floor(diff / 3600000);
     if (h < 1) return "just now";
-    if (h < 24) return `${h} hour${h === 1 ? "" : "s"} ago`;
+    if (h < 24) return `${h}h ago`;
     const d = Math.floor(h / 24);
-    if (d < 31) return `${d} day${d === 1 ? "" : "s"} ago`;
+    if (d < 31) return `${d}d ago`;
     const m = Math.floor(d / 30);
-    if (m < 12) return `${m} month${m === 1 ? "" : "s"} ago`;
+    if (m < 12) return `${m}mo ago`;
     const y = Math.floor(d / 365);
     const rem = Math.floor((d % 365) / 30);
-    return rem > 0 ? `${y}y ${rem}mo ago` : `${y} year${y === 1 ? "" : "s"} ago`;
+    return rem > 0 ? `${y}y ${rem}mo ago` : `${y}y ago`;
   };
 
   const fmt = (ts: number) =>
     new Date(ts).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+
+  const peakMonthLabel = summary && summary.peakMonth[1] > 0
+    ? new Date(`${summary.peakMonth[0]}-01`).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+    : "—";
 
   return (
     <main className="min-h-[100dvh] bg-background">
@@ -132,15 +223,59 @@ const Stats = () => {
           </div>
         ) : (
           <>
+            {/* Top stat tiles */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <StatCard icon={Sparkles} label="Total memories" value={summary.total} />
               <StatCard icon={CalendarDays} label="Days covered" value={summary.span} suffix="d" />
               <StatCard icon={Clock3} label="Unique days" value={summary.days} />
               <StatCard icon={ImageIcon} label="Photos" value={summary.images} />
               <StatCard icon={Video} label="Videos" value={summary.videos} />
-              <StatCard icon={CalendarDays} label="Multi-day events" value={summary.multiDay} />
+              <StatCard icon={CalendarDays} label="Multi-day" value={summary.multiDay} />
+              <StatCard icon={Flame} label="Day streak" value={streak} />
+              <StatCard icon={Hourglass} label="Longest gap" value={longestGap} suffix="d" />
+              <StatCard icon={Trophy} label="Top month" value={summary.peakMonth[1]} sub={peakMonthLabel} />
             </div>
 
+            {/* First / Last with random media */}
+            <div className="mt-5 grid sm:grid-cols-2 gap-3">
+              <MediaInfoCard
+                label="First memory"
+                title={summary.first.title}
+                sub={`${fmt(summary.first.date)} · ${ago(summary.first.date)}`}
+                media={firstMedia}
+                accent={Star}
+              />
+              <MediaInfoCard
+                label="Latest memory"
+                title={summary.last.title}
+                sub={`${fmt(summary.last.date)} · ${ago(summary.last.date)}`}
+                media={lastMedia}
+                accent={Heart}
+              />
+            </div>
+
+            {/* Last week */}
+            <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
+              <h2 className="text-sm font-bold flex items-center gap-2 mb-1">
+                <CalendarRange className="w-4 h-4 text-primary" /> Last 7 days
+              </h2>
+              <p className="text-[0.7rem] text-muted-foreground mb-3">
+                Memories you added in the past week.
+              </p>
+              {lastWeek.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  No memories logged this week — make one today ✨
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {lastWeek.map((e) => (
+                    <EntryRow key={e.id} e={e} ago={ago} />
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Categories */}
             <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
               <h2 className="text-sm font-bold flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-primary" /> By category
@@ -160,62 +295,90 @@ const Stats = () => {
                           </span>
                         </span>
                       </div>
-                      <div className="h-3 rounded-full bg-secondary overflow-hidden relative">
-                        <div
-                          className="h-full bg-gradient-primary rounded-full transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
+                      <div className="h-3 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-full bg-gradient-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <p className="mt-3 text-[0.7rem] text-muted-foreground">
-                Percentages show each category's share of your {summary.total} memories.
-              </p>
             </div>
 
+            {/* On THIS exact date (day + month) */}
             <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
               <h2 className="text-sm font-bold flex items-center gap-2 mb-1">
                 <History className="w-4 h-4 text-primary" /> On this day
               </h2>
               <p className="text-[0.7rem] text-muted-foreground mb-3">
-                Memories from {new Date().toLocaleDateString(undefined, { day: "2-digit", month: "long" })} across the years.
+                Memories from {today.toLocaleDateString(undefined, { day: "2-digit", month: "long" })} across the years.
               </p>
-              {onThisDay.length === 0 ? (
+              {onThisDayExact.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
-                  Nothing recorded on this date yet — come back another day ✨
+                  Nothing recorded on this exact date yet.
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {onThisDay.map((e) => (
-                    <li key={e.id} className="flex items-start gap-3 p-2 rounded-xl bg-background/40">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
-                        <span className="text-[0.55rem] uppercase leading-none">{new Date(e.date).toLocaleDateString(undefined, { month: "short" })}</span>
-                        <span className="text-xs font-bold leading-none mt-0.5">{new Date(e.date).getFullYear()}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{e.title}</p>
-                        <p className="text-[0.7rem] text-muted-foreground">{ago(e.date)}</p>
-                      </div>
-                    </li>
+                  {onThisDayExact.map((e) => (
+                    <EntryRow key={e.id} e={e} ago={ago} showYear />
                   ))}
                 </ul>
               )}
             </div>
 
-            <div className="mt-5 grid sm:grid-cols-2 gap-3">
-              <InfoCard
-                label="First memory"
-                title={summary.first.title}
-                sub={`${fmt(summary.first.date)} · ${ago(summary.first.date)}`}
-              />
-              <InfoCard
-                label="Latest memory"
-                title={summary.last.title}
-                sub={`${fmt(summary.last.date)} · ${ago(summary.last.date)}`}
-              />
+            {/* Same DAY-of-month across ALL months */}
+            <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
+              <h2 className="text-sm font-bold flex items-center gap-2 mb-1">
+                <CalendarDays className="w-4 h-4 text-primary" /> Same date, other months
+              </h2>
+              <p className="text-[0.7rem] text-muted-foreground mb-3">
+                Other months where you also made memories on the {ordinal(today.getDate())}.
+              </p>
+              {sameDateMatches.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  No matches yet. Keep adding moments ✨
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {sameDateMatches.map((g) => (
+                    <div key={g.monthLabel} className="rounded-xl bg-background/40 p-2.5">
+                      <p className="text-[0.7rem] uppercase tracking-wider font-bold text-primary mb-1.5">
+                        {g.monthLabel}
+                      </p>
+                      <ul className="space-y-1.5">
+                        {g.entries.map((e) => (
+                          <EntryRow key={e.id} e={e} ago={ago} compact />
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Upcoming anniversaries */}
+            {upcomingAnniversaries.length > 0 && (
+              <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
+                <h2 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <Heart className="w-4 h-4 text-primary" /> Coming up (next 60 days)
+                </h2>
+                <ul className="space-y-2">
+                  {upcomingAnniversaries.map(({ entry, inDays, years }) => (
+                    <li key={entry.id} className="flex items-center gap-3 p-2 rounded-xl bg-background/40">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
+                        <span className="text-xs font-bold leading-none">{inDays}</span>
+                        <span className="text-[0.55rem] uppercase leading-none mt-0.5">days</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate">{entry.title}</p>
+                        <p className="text-[0.7rem] text-muted-foreground">
+                          {years > 0 ? `${years}-year mark` : "anniversary"} · originally {fmt(entry.date)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </>
         )}
       </section>
@@ -223,34 +386,76 @@ const Stats = () => {
   );
 };
 
+const ordinal = (n: number) => {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+const EntryRow = ({
+  e, ago, showYear, compact,
+}: { e: TimelineEntry; ago: (ts: number) => string; showYear?: boolean; compact?: boolean }) => {
+  const d = new Date(e.date);
+  return (
+    <li className={`flex items-start gap-3 ${compact ? "" : "p-2"} rounded-xl ${compact ? "" : "bg-background/40"}`}>
+      <div className={`${compact ? "w-8 h-8" : "w-9 h-9"} rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0`}>
+        <span className="text-[0.55rem] uppercase leading-none">{d.toLocaleDateString(undefined, { month: "short" })}</span>
+        <span className="text-xs font-bold leading-none mt-0.5">
+          {showYear ? d.getFullYear() : d.getDate()}
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold truncate">{e.title}</p>
+        <p className="text-[0.7rem] text-muted-foreground">{ago(e.date)}</p>
+      </div>
+    </li>
+  );
+};
+
 const StatCard = ({
-  icon: Icon,
-  label,
-  value,
-  suffix,
-}: {
-  icon: typeof Sparkles;
-  label: string;
-  value: number;
-  suffix?: string;
-}) => (
+  icon: Icon, label, value, suffix, sub,
+}: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string }) => (
   <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant">
     <div className="flex items-center gap-2 text-muted-foreground">
       <Icon className="w-4 h-4 text-primary" />
-      <span className="text-[0.65rem] uppercase tracking-wider font-semibold">{label}</span>
+      <span className="text-[0.65rem] uppercase tracking-wider font-semibold truncate">{label}</span>
     </div>
     <p className="mt-1 text-2xl font-bold text-gradient">
       {value}
       {suffix && <span className="text-base ml-1 text-muted-foreground">{suffix}</span>}
     </p>
+    {sub && <p className="text-[0.65rem] text-muted-foreground truncate">{sub}</p>}
   </div>
 );
 
-const InfoCard = ({ label, title, sub }: { label: string; title: string; sub: string }) => (
-  <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant">
-    <p className="text-[0.65rem] uppercase tracking-wider font-semibold text-muted-foreground">{label}</p>
-    <p className="mt-1 font-semibold truncate">{title}</p>
-    <p className="text-xs text-muted-foreground">{sub}</p>
+const MediaInfoCard = ({
+  label, title, sub, media, accent: Accent,
+}: {
+  label: string; title: string; sub: string;
+  media: { url: string; kind: string } | null;
+  accent: typeof Sparkles;
+}) => (
+  <div className="bg-gradient-card border border-border rounded-2xl overflow-hidden shadow-elegant">
+    {media ? (
+      <div className="aspect-video bg-secondary/40 overflow-hidden">
+        {media.kind === "video" ? (
+          <video src={media.url} className="w-full h-full object-cover" muted playsInline />
+        ) : (
+          <img src={media.url} alt={title} className="w-full h-full object-cover" loading="lazy" />
+        )}
+      </div>
+    ) : (
+      <div className="aspect-video bg-gradient-primary/10 flex items-center justify-center">
+        <Accent className="w-10 h-10 text-primary/60" />
+      </div>
+    )}
+    <div className="p-3">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Accent className="w-3.5 h-3.5 text-primary" />
+        <p className="text-[0.65rem] uppercase tracking-wider font-semibold">{label}</p>
+      </div>
+      <p className="mt-1 font-semibold truncate">{title}</p>
+      <p className="text-xs text-muted-foreground">{sub}</p>
+    </div>
   </div>
 );
 
