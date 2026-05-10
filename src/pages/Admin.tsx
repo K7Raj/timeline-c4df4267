@@ -561,8 +561,9 @@ const SettingsDialog = ({
   const tabLabels: Record<TabKey, string> = {
     timeline: "Memory Map",
     stats: "Statistics",
+    traveler: "Time Traveler",
     surprise: "Surprise",
-    media: "Multimedia",
+    media: "Multimedia (legacy)",
     wish: "Make a Wish",
     rhythm: s.rhythmName || "Rhythm of Us",
   };
@@ -663,8 +664,9 @@ const UserSettingsAdminDialog = ({
   const tabLabels: Record<TabKey, string> = {
     timeline: "Memory Map",
     stats: "Statistics",
+    traveler: "Time Traveler",
     surprise: "Surprise",
-    media: "Multimedia",
+    media: "Multimedia (legacy)",
     wish: "Make a Wish",
     rhythm: s.rhythmName || "Rhythm of Us",
   };
