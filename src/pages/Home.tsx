@@ -4,7 +4,6 @@ import {
   Menu,
   Clock3,
   Gift,
-  Images,
   ChevronRight,
   LogOut,
   Settings,
@@ -17,6 +16,7 @@ import {
   Trash2,
   BarChart3,
   Music2,
+  Compass,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -57,10 +57,10 @@ interface Tab {
 const baseTabs = (rhythmName: string): Tab[] => [
   { key: "timeline", title: "Memory Map", description: "Your moments, in order", icon: Clock3, path: "/timeline" },
   { key: "stats", title: "Statistics", description: "Insights from your memories", icon: BarChart3, path: "/stats" },
-  { key: "surprise", title: "Surprise", description: "Something special awaits", icon: Gift, path: "/surprise" },
-  { key: "media", title: "Multimedia", description: "Folders, photos, videos & audio", icon: Images, path: "/media" },
+  { key: "traveler", title: "Time Traveler", description: "Plan future trips, visits & events", icon: Compass, path: "/traveler" },
   { key: "wish", title: "Make a Wish", description: "Summon the genie ✨", icon: Lamp, path: "/wish" },
-  { key: "rhythm", title: rhythmName || "Rhythm of Us", description: "Your private video collection", icon: Music2, path: "/rhythm" },
+  { key: "surprise", title: "Surprise", description: "Something special awaits", icon: Gift, path: "/surprise" },
+  { key: "rhythm", title: rhythmName || "Rhythm of Us", description: "Photos, videos, audio & films", icon: Music2, path: "/rhythm" },
 ];
 
 const Home = () => {
