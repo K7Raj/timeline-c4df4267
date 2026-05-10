@@ -202,6 +202,19 @@ const Media = () => {
             </Button>
           )}
         </div>
+        <div className="px-3 sm:px-4 pb-3 max-w-5xl mx-auto flex items-center gap-2">
+          <button
+            className="flex-1 px-3 py-1.5 rounded-full text-xs font-medium border bg-gradient-primary text-primary-foreground border-transparent shadow-glow"
+          >
+            Photos & files
+          </button>
+          <button
+            onClick={() => navigate("/rhythm")}
+            className="flex-1 px-3 py-1.5 rounded-full text-xs font-medium border bg-secondary/50 border-border text-muted-foreground hover:text-foreground transition"
+          >
+            Videos
+          </button>
+        </div>
       </header>
 
       <section className="px-3 sm:px-5 pt-5 pb-24 max-w-5xl mx-auto">
