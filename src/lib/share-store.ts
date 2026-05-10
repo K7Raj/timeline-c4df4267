@@ -23,6 +23,8 @@ const STORES = [
   { name: "gayu-vault", store: "rhythm-meta" },
   { name: "gayu-vault", store: "rhythm-blobs" },
   { name: "gayu-vault", store: "wishes" },
+  { name: "gayu-vault", store: "traveler-meta" },
+  { name: "gayu-vault", store: "traveler-blobs" },
   { name: "gayu-vault", store: "kv-mirror" },
 ] as const;
 
@@ -195,11 +197,15 @@ function toBufSource(u: Uint8Array): Uint8Array {
 
 // ---- Public API ----
 
-export async function exportEncryptedVault(passphrase: string): Promise<Blob> {
+export async function exportEncryptedVault(
+  passphrase: string,
+  opts?: { userIds?: string[] },
+): Promise<Blob> {
   if (!passphrase || passphrase.length < 4) {
     throw new Error("Passphrase must be at least 4 characters");
   }
-  const manifest = await buildManifest();
+  const scope = opts?.userIds && opts.userIds.length > 0 ? new Set(opts.userIds) : null;
+  const manifest = await buildManifest(scope);
 
   // Pack manifest into a zip first (gives compression on huge base64 blobs).
   const zip = new JSZip();
