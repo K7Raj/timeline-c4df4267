@@ -126,11 +126,12 @@ const pickIcon = (title: string) => {
 
 const Timeline = () => {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const current = getCurrentUser();
 
   // Admin can pass ?user=USER_ID to view another user's timeline
   const targetUserId = params.get("user") ?? current?.id ?? "";
+  const focusId = params.get("focus");
   const targetUser = useMemo(() => getUser(targetUserId), [targetUserId]);
   const isAdmin = current?.role === "admin";
   const perms = getMemoryMapPerms(current, targetUserId);
@@ -149,6 +150,7 @@ const Timeline = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [toDelete, setToDelete] = useState<TimelineEntry | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pulseId, setPulseId] = useState<string | null>(null);
 
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -157,6 +159,43 @@ const Timeline = () => {
   useEffect(() => {
     if (!current) navigate("/", { replace: true });
   }, [current, navigate]);
+
+  // Apply ?focus=ID after entries load: expand it and scroll into view.
+  useEffect(() => {
+    if (!focusId || entries.length === 0) return;
+    if (!entries.some((e) => e.id === focusId)) return;
+    setExpandedId(focusId);
+    setPulseId(focusId);
+    setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(`[data-entry-id="${focusId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+    const t = setTimeout(() => setPulseId(null), 1800);
+    // strip the param so re-renders don't re-trigger
+    const next = new URLSearchParams(params);
+    next.delete("focus");
+    setParams(next, { replace: true });
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, entries]);
+
+  // Click anywhere outside the expanded card closes it.
+  useEffect(() => {
+    if (!expandedId) return;
+    const handler = (ev: MouseEvent) => {
+      const t = ev.target as HTMLElement | null;
+      if (!t) return;
+      if (t.closest("[data-expanded-card='true']")) return;
+      if (t.closest("[data-entry-id]")) return; // tapping any node toggles via its own handler
+      setExpandedId(null);
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [expandedId]);
 
   const load = async () => {
     if (!targetUserId) return;
@@ -403,6 +442,7 @@ const Timeline = () => {
             entries={filtered}
             urls={urls}
             expandedId={expandedId}
+            pulseId={pulseId}
             onToggleExpand={(id) => {
               if (selectMode) toggleSelect(id);
               else setExpandedId((cur) => (cur === id ? null : id));
@@ -477,6 +517,7 @@ const CandyMap = ({
   entries,
   urls,
   expandedId,
+  pulseId,
   onToggleExpand,
   selectMode,
   selected,
@@ -488,6 +529,7 @@ const CandyMap = ({
   entries: TimelineEntry[];
   urls: Record<string, string>;
   expandedId: string | null;
+  pulseId: string | null;
   onToggleExpand: (id: string) => void;
   selectMode: boolean;
   selected: Set<string>;
