@@ -605,7 +605,7 @@ const CandyMap = ({
         const cardLeft = isLeft ? Math.max(4, pos.x - gap - slot) : pos.x + gap;
 
         return (
-          <div key={e.id}>
+          <div key={e.id} data-entry-id={e.id}>
             {showYear && (
               <div
                 className="absolute z-10"
@@ -670,9 +670,10 @@ const CandyMap = ({
             {isExpanded && (
               <div
                 className="absolute left-2 right-2 z-20 animate-fade-in"
+                data-expanded-card="true"
                 style={{ top: pos.y + NODE / 2 + 8 }}
               >
-                <div className="bg-gradient-card border border-primary/40 rounded-2xl p-3 shadow-glow space-y-2">
+                <div className={`bg-gradient-card border rounded-2xl p-3 shadow-glow space-y-2 ${pulseId === e.id ? "border-primary ring-4 ring-primary/40" : "border-primary/40"}`}>
                   <div className="flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-wider text-primary">
                     <CalendarIcon className="w-3 h-3" />
                     <span>
