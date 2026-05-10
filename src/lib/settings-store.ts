@@ -9,7 +9,7 @@
 //   }
 // Older v1 data ({...AppSettings}) is migrated into `defaults` on read.
 
-export type TabKey = "timeline" | "stats" | "surprise" | "media" | "wish" | "rhythm";
+export type TabKey = "timeline" | "stats" | "traveler" | "surprise" | "media" | "wish" | "rhythm";
 
 export interface AppSettings {
   welcomeHeading: string;
@@ -27,16 +27,17 @@ const defaults: AppSettings = {
   welcomeHeading: "Your special surprise awaits ✨",
   quotes: [
     "✨ You are the magic in every ordinary day.",
-    "🎂 Another year of being absolutely wonderful.",
     "💖 Loved, celebrated, and forever special.",
   ],
-  enabledTabs: { timeline: true, stats: true, surprise: true, media: true, wish: true, rhythm: true },
+  enabledTabs: {
+    timeline: true, stats: true, traveler: true,
+    surprise: true, media: true, wish: true, rhythm: true,
+  },
   memoryMapCrud: {},
   surpriseWishes: [
     "Happy Birthday {name} 💖",
     "May your day sparkle as bright as you ✨",
     "You are loved beyond words 💕",
-    "Here's to another year of magic 🎂",
   ],
   rhythmName: "Rhythm of Us",
 };

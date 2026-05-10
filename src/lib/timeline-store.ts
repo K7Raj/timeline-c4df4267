@@ -1,5 +1,4 @@
 import localforage from "localforage";
-import seed from "@/data/timeline-seed.json";
 
 export interface TimelineEntry {
   id: string;
@@ -28,40 +27,7 @@ const ENTRIES_KEY = "entries";
 export const uid = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 
-const seededKey = (userId: string) => `seeded-v3:${userId}`;
-
-async function ensureSeeded(userId: string) {
-  // Only seed for the special "gayu" user keeping prior memories
-  const all = (await metaStore.getItem<TimelineEntry[]>(ENTRIES_KEY)) ?? [];
-  const has = all.some((e) => e.userId === userId);
-  const flag = await metaStore.getItem<boolean>(seededKey(userId));
-  if (flag || has) return;
-  if (userId !== "user-gayu") {
-    await metaStore.setItem(seededKey(userId), true);
-    return;
-  }
-  const now = Date.now();
-  const toLocalTs = (s: string) => {
-    const [y, m, d] = s.split("-").map(Number);
-    return new Date(y, m - 1, d).getTime();
-  };
-  const seedEntries: TimelineEntry[] = (
-    seed as Array<{ date: string; endDate?: string; title: string; content: string }>
-  ).map((s, idx) => ({
-    id: `seed-${userId}-${idx}-${uid()}`,
-    userId,
-    date: toLocalTs(s.date),
-    endDate: s.endDate ? toLocalTs(s.endDate) : undefined,
-    title: s.title,
-    content: s.content,
-    createdAt: now + idx,
-  }));
-  await metaStore.setItem(ENTRIES_KEY, [...seedEntries, ...all]);
-  await metaStore.setItem(seededKey(userId), true);
-}
-
 export async function getEntries(userId: string): Promise<TimelineEntry[]> {
-  await ensureSeeded(userId);
   const list = (await metaStore.getItem<TimelineEntry[]>(ENTRIES_KEY)) ?? [];
   return list
     .filter((e) => e.userId === userId)

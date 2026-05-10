@@ -238,20 +238,24 @@ const Stats = () => {
 
             {/* First / Last with random media */}
             <div className="mt-5 grid sm:grid-cols-2 gap-3">
-              <MediaInfoCard
-                label="First memory"
-                title={summary.first.title}
-                sub={`${fmt(summary.first.date)} · ${ago(summary.first.date)}`}
-                media={firstMedia}
-                accent={Star}
-              />
-              <MediaInfoCard
-                label="Latest memory"
-                title={summary.last.title}
-                sub={`${fmt(summary.last.date)} · ${ago(summary.last.date)}`}
-                media={lastMedia}
-                accent={Heart}
-              />
+              <button onClick={() => navigate(`/timeline?focus=${summary.first.id}`)} className="text-left">
+                <MediaInfoCard
+                  label="First memory"
+                  title={summary.first.title}
+                  sub={`${fmt(summary.first.date)} · ${ago(summary.first.date)}`}
+                  media={firstMedia}
+                  accent={Star}
+                />
+              </button>
+              <button onClick={() => navigate(`/timeline?focus=${summary.last.id}`)} className="text-left">
+                <MediaInfoCard
+                  label="Latest memory"
+                  title={summary.last.title}
+                  sub={`${fmt(summary.last.date)} · ${ago(summary.last.date)}`}
+                  media={lastMedia}
+                  accent={Heart}
+                />
+              </button>
             </div>
 
             {/* Last week */}
@@ -363,17 +367,22 @@ const Stats = () => {
                 </h2>
                 <ul className="space-y-2">
                   {upcomingAnniversaries.map(({ entry, inDays, years }) => (
-                    <li key={entry.id} className="flex items-center gap-3 p-2 rounded-xl bg-background/40">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
-                        <span className="text-xs font-bold leading-none">{inDays}</span>
-                        <span className="text-[0.55rem] uppercase leading-none mt-0.5">days</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{entry.title}</p>
-                        <p className="text-[0.7rem] text-muted-foreground">
-                          {years > 0 ? `${years}-year mark` : "anniversary"} · originally {fmt(entry.date)}
-                        </p>
-                      </div>
+                    <li key={entry.id}>
+                      <button
+                        onClick={() => navigate(`/timeline?focus=${entry.id}`)}
+                        className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
+                      >
+                        <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
+                          <span className="text-xs font-bold leading-none">{inDays}</span>
+                          <span className="text-[0.55rem] uppercase leading-none mt-0.5">days</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">{entry.title}</p>
+                          <p className="text-[0.7rem] text-muted-foreground">
+                            {years > 0 ? `${years}-year mark` : "anniversary"} · originally {fmt(entry.date)}
+                          </p>
+                        </div>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -395,18 +404,25 @@ const EntryRow = ({
   e, ago, showYear, compact,
 }: { e: TimelineEntry; ago: (ts: number) => string; showYear?: boolean; compact?: boolean }) => {
   const d = new Date(e.date);
+  const navigate = useNavigate();
   return (
-    <li className={`flex items-start gap-3 ${compact ? "" : "p-2"} rounded-xl ${compact ? "" : "bg-background/40"}`}>
-      <div className={`${compact ? "w-8 h-8" : "w-9 h-9"} rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0`}>
-        <span className="text-[0.55rem] uppercase leading-none">{d.toLocaleDateString(undefined, { month: "short" })}</span>
-        <span className="text-xs font-bold leading-none mt-0.5">
-          {showYear ? d.getFullYear() : d.getDate()}
-        </span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold truncate">{e.title}</p>
-        <p className="text-[0.7rem] text-muted-foreground">{ago(e.date)}</p>
-      </div>
+    <li>
+      <button
+        type="button"
+        onClick={() => navigate(`/timeline?focus=${e.id}`)}
+        className={`w-full text-left flex items-start gap-3 ${compact ? "" : "p-2"} rounded-xl ${compact ? "hover:bg-background/50" : "bg-background/40 hover:bg-background/60"} transition`}
+      >
+        <div className={`${compact ? "w-8 h-8" : "w-9 h-9"} rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0`}>
+          <span className="text-[0.55rem] uppercase leading-none">{d.toLocaleDateString(undefined, { month: "short" })}</span>
+          <span className="text-xs font-bold leading-none mt-0.5">
+            {showYear ? d.getFullYear() : d.getDate()}
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold truncate">{e.title}</p>
+          <p className="text-[0.7rem] text-muted-foreground">{ago(e.date)}</p>
+        </div>
+      </button>
     </li>
   );
 };

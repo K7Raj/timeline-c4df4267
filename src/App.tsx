@@ -12,6 +12,7 @@ import Admin from "./pages/Admin.tsx";
 import Wish from "./pages/Wish.tsx";
 import Stats from "./pages/Stats.tsx";
 import Rhythm from "./pages/Rhythm.tsx";
+import TimeTraveler from "./pages/TimeTraveler.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/wish" element={<Wish />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/rhythm" element={<Rhythm />} />
+          <Route path="/traveler" element={<TimeTraveler />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

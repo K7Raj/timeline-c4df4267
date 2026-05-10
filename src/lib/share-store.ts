@@ -23,6 +23,8 @@ const STORES = [
   { name: "gayu-vault", store: "rhythm-meta" },
   { name: "gayu-vault", store: "rhythm-blobs" },
   { name: "gayu-vault", store: "wishes" },
+  { name: "gayu-vault", store: "traveler-meta" },
+  { name: "gayu-vault", store: "traveler-blobs" },
   { name: "gayu-vault", store: "kv-mirror" },
 ] as const;
 
@@ -56,23 +58,66 @@ interface VaultManifest {
   stores: Record<string, Record<string, unknown>>;
 }
 
-async function buildManifest(): Promise<VaultManifest> {
+// Set of userIds whose data should be included. If null/undefined → include
+// everything (admin "share everything" mode or unfiltered import).
+type Scope = Set<string> | null;
+
+// Best-effort: many stored values have a `userId` field. Filter if present;
+// keep otherwise (e.g. global lookup tables).
+function valueMatchesScope(value: unknown, scope: Scope): boolean {
+  if (!scope) return true;
+  if (!value || typeof value !== "object") return true;
+  const v = value as { userId?: string };
+  if (typeof v.userId === "string") return scope.has(v.userId);
+  // Wishes are stored under key `wishes:<userId>`; the value itself doesn't
+  // carry the id, so the key-level filter below handles them.
+  return true;
+}
+
+function keyMatchesScope(key: string, scope: Scope): boolean {
+  if (!scope) return true;
+  // Wish-store keys: `wishes:<userId>`
+  if (key.startsWith("wishes:")) return scope.has(key.slice("wishes:".length));
+  // Settings-store legacy seeded flag: `seeded-v3:<userId>` (no longer
+  // written but might exist in older devices)
+  if (key.startsWith("seeded-v3:")) return scope.has(key.slice("seeded-v3:".length));
+  return true;
+}
+
+async function buildManifest(scope: Scope): Promise<VaultManifest> {
   const manifest: VaultManifest = {
     version: 2,
     exportedAt: Date.now(),
     trackedKeys: await snapshotTrackedKeys(),
     stores: {},
   };
+
+  // Filter the user list inside `vault-users` to the chosen scope.
+  if (scope && manifest.trackedKeys["vault-users"]) {
+    try {
+      const arr = JSON.parse(manifest.trackedKeys["vault-users"]) as Array<{ id: string }>;
+      manifest.trackedKeys["vault-users"] = JSON.stringify(arr.filter((u) => scope.has(u.id)));
+    } catch {
+      /* ignore */
+    }
+  }
+
   for (const s of STORES) {
     const inst = localforage.createInstance({ name: s.name, storeName: s.store });
     const data: Record<string, unknown> = {};
     const blobRefs: Array<{ key: string; blob: Blob }> = [];
     await inst.iterate((value, key) => {
-      if (value instanceof Blob) {
-        blobRefs.push({ key, blob: value });
-      } else {
-        data[key] = value;
+      // Some stores hold list-shaped values where every entry has its own
+      // userId — handle those by filtering the inner array.
+      if (Array.isArray(value)) {
+        const filtered = (value as unknown[]).filter((item) => valueMatchesScope(item, scope));
+        if (filtered.length === 0 && scope) return;
+        data[key] = filtered;
+        return;
       }
+      if (!keyMatchesScope(key, scope) || !valueMatchesScope(value, scope)) return;
+      if (value instanceof Blob) blobRefs.push({ key, blob: value });
+      else data[key] = value;
     });
     for (const { key, blob } of blobRefs) {
       data[key] = {
@@ -152,11 +197,15 @@ function toBufSource(u: Uint8Array): Uint8Array {
 
 // ---- Public API ----
 
-export async function exportEncryptedVault(passphrase: string): Promise<Blob> {
+export async function exportEncryptedVault(
+  passphrase: string,
+  opts?: { userIds?: string[] },
+): Promise<Blob> {
   if (!passphrase || passphrase.length < 4) {
     throw new Error("Passphrase must be at least 4 characters");
   }
-  const manifest = await buildManifest();
+  const scope = opts?.userIds && opts.userIds.length > 0 ? new Set(opts.userIds) : null;
+  const manifest = await buildManifest(scope);
 
   // Pack manifest into a zip first (gives compression on huge base64 blobs).
   const zip = new JSZip();
