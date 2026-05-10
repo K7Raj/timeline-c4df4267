@@ -30,6 +30,7 @@ export const TRACKED_KEYS = [
   "app-settings-v1", // legacy migration
   "notices-v1",
   "theme",
+  "media-view-prefs", // grid/list + size for Rhythm > Photos
 ];
 
 let booted = false;

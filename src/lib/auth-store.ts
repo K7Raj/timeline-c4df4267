@@ -18,44 +18,16 @@ const SESSION_KEY = "vault-session"; // stores user id
 const uid = () =>
   `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-const seed = (): User[] => [
-  {
-    id: "admin-root",
-    username: "admin",
-    profileName: "Administrator",
-    passcode: "Admin@2026",
-    role: "admin",
-    createdAt: Date.now(),
-  },
-  {
-    id: "user-gayu",
-    username: "gayu",
-    profileName: "Gayu Kitty",
-    passcode: "Welcome@2026",
-    role: "user",
-    createdAt: Date.now(),
-  },
-];
-
+// No hardcoded seed users — first launch shows a bootstrap screen that lets
+// the operator either create the first admin or import a vault. Once a user
+// exists, this list is the single source of truth (persisted on the device).
 export function listUsers(): User[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
-    if (!raw) {
-      const s = seed();
-      localStorage.setItem(USERS_KEY, JSON.stringify(s));
-      return s;
-    }
-    const parsed = JSON.parse(raw) as User[];
-    // ensure admin always exists
-    if (!parsed.some((u) => u.role === "admin")) {
-      parsed.unshift(seed()[0]);
-      localStorage.setItem(USERS_KEY, JSON.stringify(parsed));
-    }
-    return parsed;
+    if (!raw) return [];
+    return JSON.parse(raw) as User[];
   } catch {
-    const s = seed();
-    localStorage.setItem(USERS_KEY, JSON.stringify(s));
-    return s;
+    return [];
   }
 }
 
