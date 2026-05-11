@@ -228,6 +228,21 @@ const Timeline = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetUserId]);
 
+  // After initial load (and only when no ?focus is set), scroll to the first
+  // entry so the user lands directly on real data instead of the empty state.
+  const didAutoScroll = useRef(false);
+  useEffect(() => {
+    if (loading || focusId || didAutoScroll.current) return;
+    if (entries.length === 0) return;
+    didAutoScroll.current = true;
+    setTimeout(() => {
+      const sorted = [...entries].sort((a, b) => a.date - b.date);
+      const first = sorted[0];
+      const el = document.querySelector<HTMLElement>(`[data-entry-id="${first.id}"]`);
+      el?.scrollIntoView({ behavior: "auto", block: "center" });
+    }, 60);
+  }, [loading, entries, focusId]);
+
   const filtered = useMemo(() => {
     const now = Date.now();
     let from = 0;
