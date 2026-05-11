@@ -16,6 +16,7 @@ export interface AppSettings {
   quotes: string[];
   enabledTabs: Record<TabKey, boolean>;
   memoryMapCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
+  travelerCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
   surpriseWishes: string[];
   rhythmName: string;
 }
@@ -34,6 +35,7 @@ const defaults: AppSettings = {
     surprise: true, media: true, wish: true, rhythm: true,
   },
   memoryMapCrud: {},
+  travelerCrud: {},
   surpriseWishes: [
     "Happy Birthday {name} 💖",
     "May your day sparkle as bright as you ✨",
