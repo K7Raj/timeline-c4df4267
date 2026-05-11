@@ -184,8 +184,11 @@ const Wish = () => {
         </div>
       </header>
 
-      {/* Burst stars layer */}
-      <div className="pointer-events-none fixed inset-0 z-30">
+      {/* Burst stars layer - constrained to a centered square around the genie */}
+      <div
+        className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30"
+        style={{ width: "min(90vw,28rem)", height: "min(90vw,28rem)" }}
+      >
         {bursts.map((b) => (
           <span
             key={b.id}
