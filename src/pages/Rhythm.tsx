@@ -162,19 +162,21 @@ const Rhythm = () => {
             onChange={(e) => onPick(e.target.files)}
           />
         </div>
-        <div className="px-3 sm:px-4 pb-3 max-w-2xl mx-auto flex items-center gap-2">
-          <button
-            onClick={() => navigate("/media")}
-            className="flex-1 px-3 py-1.5 rounded-full text-xs font-medium border bg-secondary/50 border-border text-muted-foreground hover:text-foreground transition"
-          >
-            Photos & files
-          </button>
-          <button
-            className="flex-1 px-3 py-1.5 rounded-full text-xs font-medium border bg-gradient-primary text-primary-foreground border-transparent shadow-glow"
-          >
-            Videos
-          </button>
-        </div>
+        {settings.enabledTabs.media && (
+          <div className="px-3 sm:px-4 pb-3 max-w-2xl mx-auto flex items-center gap-2">
+            <button
+              onClick={() => navigate("/media")}
+              className="flex-1 px-3 py-1.5 rounded-full text-xs font-medium border bg-secondary/50 border-border text-muted-foreground hover:text-foreground transition"
+            >
+              Photos & files
+            </button>
+            <button
+              className="flex-1 px-3 py-1.5 rounded-full text-xs font-medium border bg-gradient-primary text-primary-foreground border-transparent shadow-glow"
+            >
+              Videos
+            </button>
+          </div>
+        )}
       </header>
 
       <section className="px-4 pt-5 pb-12 max-w-2xl mx-auto">
