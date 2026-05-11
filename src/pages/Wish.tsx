@@ -30,12 +30,18 @@ const Wish = () => {
   };
 
   const spawnStars = () => {
-    const batch = Array.from({ length: 14 }).map((_, i) => ({
-      id: Date.now() + i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 14 + Math.random() * 22,
-    }));
+    // Cluster sparkles around the genie (center, ~40-60% horizontally,
+    // ~35-65% vertically) instead of all over the screen.
+    const batch = Array.from({ length: 14 }).map((_, i) => {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 8 + Math.random() * 22; // % from center
+      return {
+        id: Date.now() + i,
+        x: 50 + Math.cos(angle) * radius,
+        y: 50 + Math.sin(angle) * radius,
+        size: 12 + Math.random() * 20,
+      };
+    });
     setBursts((b) => [...b, ...batch]);
     window.setTimeout(() => {
       setBursts((b) => b.filter((s) => !batch.find((x) => x.id === s.id)));
@@ -171,15 +177,18 @@ const Wish = () => {
               triggerReact();
             }}
             aria-label="Sprinkle magic"
-            className="relative w-9 h-9 rounded-xl flex items-center justify-center text-amber-200 hover:text-amber-100 hover:bg-amber-300/10 active:scale-95 transition"
+            className="relative w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-300/80 to-pink-300/80 text-purple-950 shadow-[0_0_18px_rgba(251,191,36,0.55)] hover:shadow-[0_0_24px_rgba(251,191,36,0.75)] hover:from-amber-200 hover:to-pink-200 active:scale-90 transition"
           >
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* Burst stars layer */}
-      <div className="pointer-events-none fixed inset-0 z-30">
+      {/* Burst stars layer - constrained to a centered square around the genie */}
+      <div
+        className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30"
+        style={{ width: "min(90vw,28rem)", height: "min(90vw,28rem)" }}
+      >
         {bursts.map((b) => (
           <span
             key={b.id}

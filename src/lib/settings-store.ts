@@ -16,6 +16,7 @@ export interface AppSettings {
   quotes: string[];
   enabledTabs: Record<TabKey, boolean>;
   memoryMapCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
+  travelerCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
   surpriseWishes: string[];
   rhythmName: string;
 }
@@ -34,6 +35,7 @@ const defaults: AppSettings = {
     surprise: true, media: true, wish: true, rhythm: true,
   },
   memoryMapCrud: {},
+  travelerCrud: {},
   surpriseWishes: [
     "Happy Birthday {name} 💖",
     "May your day sparkle as bright as you ✨",
@@ -56,6 +58,7 @@ function readStore(): Store {
         defaults: { ...defaults, ...(parsed.defaults ?? {}),
           enabledTabs: { ...defaults.enabledTabs, ...(parsed.defaults?.enabledTabs ?? {}) },
           memoryMapCrud: { ...(parsed.defaults?.memoryMapCrud ?? {}) },
+          travelerCrud: { ...(parsed.defaults?.travelerCrud ?? {}) },
         },
         users: parsed.users ?? {},
       };
@@ -70,6 +73,7 @@ function readStore(): Store {
           ...p,
           enabledTabs: { ...defaults.enabledTabs, ...(p.enabledTabs ?? {}) },
           memoryMapCrud: { ...(p.memoryMapCrud ?? {}) },
+          travelerCrud: { ...(p.travelerCrud ?? {}) },
         },
         users: {},
       };
@@ -103,7 +107,8 @@ function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
     welcomeHeading: o.welcomeHeading ?? d.welcomeHeading,
     quotes: o.quotes ?? d.quotes,
     enabledTabs: { ...d.enabledTabs, ...(o.enabledTabs ?? {}) },
-    memoryMapCrud: d.memoryMapCrud, // permissions stay on defaults
+    memoryMapCrud: d.memoryMapCrud,
+    travelerCrud: d.travelerCrud,
     surpriseWishes: o.surpriseWishes ?? d.surpriseWishes,
     rhythmName: o.rhythmName ?? d.rhythmName,
   };
@@ -158,4 +163,12 @@ export function getMemoryMapPerms(user: User | null, targetUserId: string) {
   if (user.id !== targetUserId) return { create: false, update: false, delete: false };
   const s = readStore();
   return s.defaults.memoryMapCrud[user.id] ?? { create: false, update: false, delete: false };
+}
+
+export function getTravelerPerms(user: User | null, targetUserId: string) {
+  if (!user) return { create: false, update: false, delete: false };
+  if (user.role === "admin") return { create: true, update: true, delete: true };
+  if (user.id !== targetUserId) return { create: false, update: false, delete: false };
+  const s = readStore();
+  return s.defaults.travelerCrud[user.id] ?? { create: false, update: false, delete: false };
 }

@@ -151,6 +151,7 @@ const Timeline = () => {
   const [toDelete, setToDelete] = useState<TimelineEntry | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pulseId, setPulseId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -199,6 +200,7 @@ const Timeline = () => {
 
   const load = async () => {
     if (!targetUserId) return;
+    setLoading(true);
     const list = await getEntries(targetUserId);
     setEntries(list);
     // Load media URLs in parallel for snappier rendering
@@ -212,6 +214,7 @@ const Timeline = () => {
       Object.values(prev).forEach((u) => URL.revokeObjectURL(u));
       return map;
     });
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -224,6 +227,21 @@ const Timeline = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetUserId]);
+
+  // After initial load (and only when no ?focus is set), scroll to the first
+  // entry so the user lands directly on real data instead of the empty state.
+  const didAutoScroll = useRef(false);
+  useEffect(() => {
+    if (loading || focusId || didAutoScroll.current) return;
+    if (entries.length === 0) return;
+    didAutoScroll.current = true;
+    setTimeout(() => {
+      const sorted = [...entries].sort((a, b) => a.date - b.date);
+      const first = sorted[0];
+      const el = document.querySelector<HTMLElement>(`[data-entry-id="${first.id}"]`);
+      el?.scrollIntoView({ behavior: "auto", block: "center" });
+    }, 60);
+  }, [loading, entries, focusId]);
 
   const filtered = useMemo(() => {
     const now = Date.now();
@@ -435,7 +453,12 @@ const Timeline = () => {
       </header>
 
       <section className="flex-1 px-3 sm:px-5 pt-4 pb-10 max-w-2xl w-full mx-auto">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-xs text-muted-foreground">
+            <span className="inline-block w-4 h-4 mr-2 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            Loading your memories…
+          </div>
+        ) : filtered.length === 0 ? (
           <EmptyState onAdd={openCreate} hasEntries={entries.length > 0} canEdit={canCreate} />
         ) : (
           <CandyMap

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { getCurrentUser } from "@/lib/auth-store";
+import { getTravelerPerms } from "@/lib/settings-store";
 import {
   createPlan, deletePlan, getPlanImageUrl, listPlans, updatePlan,
   type PlanKind, type TravelerPlan,
@@ -50,6 +51,10 @@ const daysFromNow = (ts: number) => {
 const TimeTraveler = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
+  const perms = user ? getTravelerPerms(user, user.id) : { create: false, update: false, delete: false };
+  const canCreate = perms.create;
+  const canEdit = perms.update;
+  const canDelete = perms.delete;
   const [plans, setPlans] = useState<TravelerPlan[]>([]);
   const [view, setView] = useState<"months" | "days">("months");
   const [editing, setEditing] = useState<TravelerPlan | null>(null);
@@ -132,14 +137,16 @@ const TimeTraveler = () => {
             <Compass className="w-4 h-4 text-primary-foreground" />
           </div>
           <h1 className="text-lg font-bold text-gradient flex-1 truncate">Time Traveler</h1>
-          <Button
-            size="icon"
-            className="rounded-xl bg-gradient-primary text-primary-foreground"
-            onClick={() => { setEditing(null); setCreateOpen(true); }}
-            aria-label="Add plan"
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
+          {canCreate && (
+            <Button
+              size="icon"
+              className="rounded-xl bg-gradient-primary text-primary-foreground"
+              onClick={() => { setEditing(null); setCreateOpen(true); }}
+              aria-label="Add plan"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          )}
         </div>
 
         <div className="px-3 sm:px-4 pb-3 max-w-2xl mx-auto flex items-center gap-2">
@@ -179,12 +186,14 @@ const TimeTraveler = () => {
             <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-5">
               Trips, activities, visits, events — never miss a thing. Add your first plan.
             </p>
-            <Button
-              onClick={() => { setEditing(null); setCreateOpen(true); }}
-              className="rounded-xl bg-gradient-primary text-primary-foreground"
-            >
-              <Plus className="w-4 h-4" /> Add a plan
-            </Button>
+            {canCreate && (
+              <Button
+                onClick={() => { setEditing(null); setCreateOpen(true); }}
+                className="rounded-xl bg-gradient-primary text-primary-foreground"
+              >
+                <Plus className="w-4 h-4" /> Add a plan
+              </Button>
+            )}
           </div>
         ) : view === "months" ? (
           <div className="space-y-5">
@@ -209,8 +218,8 @@ const TimeTraveler = () => {
                         key={p.id}
                         plan={p}
                         image={images[p.id]}
-                        onEdit={() => setEditing(p)}
-                        onDelete={() => setToDelete(p)}
+                        onEdit={canEdit ? () => setEditing(p) : undefined}
+                        onDelete={canDelete ? () => setToDelete(p) : undefined}
                       />
                     ))}
                   </div>
@@ -225,7 +234,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={() => setEditing(p)} onDelete={() => setToDelete(p)} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
                   ))}
                 </div>
               </div>
@@ -234,7 +243,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} onEdit={() => setEditing(p)} onDelete={() => setToDelete(p)} />
+              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -243,7 +252,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={() => setEditing(p)} onDelete={() => setToDelete(p)} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
                   ))}
                 </div>
               </div>
@@ -284,7 +293,7 @@ const TimeTraveler = () => {
 
 const PlanCard = ({
   plan, image, onEdit, onDelete,
-}: { plan: TravelerPlan; image?: string; onEdit: () => void; onDelete: () => void }) => {
+}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   return (
@@ -322,14 +331,20 @@ const PlanCard = ({
         {plan.notes && (
           <p className="mt-1.5 text-xs text-foreground/80 line-clamp-2 whitespace-pre-wrap">{plan.notes}</p>
         )}
-        <div className="mt-2 flex items-center justify-end gap-1">
-          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg" onClick={onEdit}>
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-destructive" onClick={onDelete}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+        {(onEdit || onDelete) && (
+          <div className="mt-2 flex items-center justify-end gap-1">
+            {onEdit && (
+              <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg" onClick={onEdit}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-destructive" onClick={onDelete}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -337,7 +352,7 @@ const PlanCard = ({
 
 const PlanRow = ({
   plan, onEdit, onDelete,
-}: { plan: TravelerPlan; onEdit: () => void; onDelete: () => void }) => {
+}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   return (
@@ -365,14 +380,20 @@ const PlanRow = ({
           {plan.location ? ` · ${plan.location}` : ""}
         </p>
       </div>
-      <div className="flex items-center gap-0.5">
-        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onEdit}>
-          <Pencil className="w-3.5 h-3.5" />
-        </Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive" onClick={onDelete}>
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
+      {(onEdit || onDelete) && (
+        <div className="flex items-center gap-0.5">
+          {onEdit && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onEdit}>
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive" onClick={onDelete}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

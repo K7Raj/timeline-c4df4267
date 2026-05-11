@@ -49,6 +49,7 @@ import {
   renameFolder,
 } from "@/lib/media-store";
 import { getCurrentUser } from "@/lib/auth-store";
+import { useSettings } from "@/lib/settings-store";
 
 const Media = () => {
   const navigate = useNavigate();
@@ -81,9 +82,11 @@ const Media = () => {
     setLoading(false);
   }, [userId]);
 
+  const settings = useSettings(user?.id);
   useEffect(() => {
     if (!user) navigate("/", { replace: true });
-  }, [user, navigate]);
+    else if (!settings.enabledTabs.media) navigate("/home", { replace: true });
+  }, [user, navigate, settings.enabledTabs.media]);
 
   useEffect(() => {
     refresh();

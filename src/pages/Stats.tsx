@@ -3,10 +3,17 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
+  Compass, ArrowRightCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
-import { getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
+import { createEntry, getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
+import { deletePlan, listPlans, type TravelerPlan } from "@/lib/traveler-store";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface Bucket { key: string; label: string; count: number }
 
@@ -14,13 +21,46 @@ const Stats = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [plans, setPlans] = useState<TravelerPlan[]>([]);
   const [firstMedia, setFirstMedia] = useState<{ url: string; kind: string } | null>(null);
   const [lastMedia, setLastMedia] = useState<{ url: string; kind: string } | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<TravelerPlan | null>(null);
+
+  const reloadPlans = () => { if (user) listPlans(user.id).then(setPlans); };
 
   useEffect(() => {
     if (!user) { navigate("/", { replace: true }); return; }
     getEntries(user.id).then(setEntries);
+    listPlans(user.id).then(setPlans);
   }, [user, navigate]);
+
+  const todayMid = useMemo(() => {
+    const t = new Date(); t.setHours(0, 0, 0, 0); return t.getTime();
+  }, []);
+  const upcomingPlans = useMemo(
+    () => plans.filter((p) => (p.endDate ?? p.startDate) >= todayMid).sort((a, b) => a.startDate - b.startDate),
+    [plans, todayMid],
+  );
+  const overduePlans = useMemo(
+    () => plans.filter((p) => (p.endDate ?? p.startDate) < todayMid).sort((a, b) => b.startDate - a.startDate),
+    [plans, todayMid],
+  );
+
+  const promote = async () => {
+    if (!user || !promoteTarget) return;
+    await createEntry(user.id, {
+      date: promoteTarget.startDate,
+      endDate: promoteTarget.endDate,
+      title: promoteTarget.title,
+      content: [promoteTarget.location ? `📍 ${promoteTarget.location}` : "", promoteTarget.notes].filter(Boolean).join("\n\n"),
+      file: null,
+    });
+    await deletePlan(promoteTarget.id);
+    toast({ title: `Added "${promoteTarget.title}" to your Memory Map ✨` });
+    setPromoteTarget(null);
+    reloadPlans();
+    getEntries(user.id).then(setEntries);
+  };
 
   const summary = useMemo(() => {
     if (entries.length === 0) return null;
@@ -390,7 +430,95 @@ const Stats = () => {
             )}
           </>
         )}
+
+        {/* Time Traveler insights */}
+        {(upcomingPlans.length > 0 || overduePlans.length > 0) && (
+          <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
+            <h2 className="text-sm font-bold flex items-center gap-2 mb-1">
+              <Compass className="w-4 h-4 text-primary" /> Time Traveler
+            </h2>
+            <p className="text-[0.7rem] text-muted-foreground mb-3">
+              Future plans you've set, and any whose date has passed.
+            </p>
+
+            {upcomingPlans.length > 0 && (
+              <>
+                <p className="text-[0.65rem] uppercase tracking-wider font-bold text-primary mb-1.5">Upcoming</p>
+                <ul className="space-y-2 mb-3">
+                  {upcomingPlans.slice(0, 6).map((p) => {
+                    const days = Math.max(0, Math.round((p.startDate - todayMid) / 86400000));
+                    return (
+                      <li key={p.id}>
+                        <button
+                          onClick={() => navigate("/traveler")}
+                          className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
+                            <span className="text-xs font-bold leading-none">{days}</span>
+                            <span className="text-[0.55rem] uppercase leading-none mt-0.5">days</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold truncate">{p.title}</p>
+                            <p className="text-[0.7rem] text-muted-foreground truncate">
+                              {fmt(p.startDate)}{p.location ? ` · ${p.location}` : ""}
+                            </p>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+
+            {overduePlans.length > 0 && (
+              <>
+                <p className="text-[0.65rem] uppercase tracking-wider font-bold text-amber-500 mb-1.5">
+                  Date passed — add to Memory Map?
+                </p>
+                <ul className="space-y-2">
+                  {overduePlans.slice(0, 6).map((p) => (
+                    <li key={p.id} className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
+                        <Compass className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate">{p.title}</p>
+                        <p className="text-[0.7rem] text-muted-foreground">{fmt(p.startDate)}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-lg text-primary hover:bg-primary/10 h-8 px-2"
+                        onClick={() => setPromoteTarget(p)}
+                      >
+                        <ArrowRightCircle className="w-4 h-4" /> Save
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
       </section>
+
+      <AlertDialog open={!!promoteTarget} onOpenChange={(o) => !o && setPromoteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add this plan to your Memory Map?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{promoteTarget?.title}" will be saved as a memory and removed from Time Traveler.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not yet</AlertDialogCancel>
+            <AlertDialogAction onClick={promote} className="bg-gradient-primary text-primary-foreground">
+              Add to Memory Map
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };

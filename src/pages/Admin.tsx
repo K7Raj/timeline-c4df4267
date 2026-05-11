@@ -16,6 +16,7 @@ import {
   Settings as SettingsIcon,
   Sparkles,
   Lamp,
+  Compass,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ const Admin = () => {
   const [shareOpen, setShareOpen] = useState(false);
   
   const [permsTarget, setPermsTarget] = useState<User | null>(null);
+  const [travelerPermsTarget, setTravelerPermsTarget] = useState<User | null>(null);
   const [resetWishTarget, setResetWishTarget] = useState<User | null>(null);
   const [userSettingsTarget, setUserSettingsTarget] = useState<User | null>(null);
   const { theme, toggle } = useTheme();
@@ -151,6 +153,7 @@ const Admin = () => {
 
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
       <PermsDialog target={permsTarget} onClose={() => setPermsTarget(null)} />
+      <TravelerPermsDialog target={travelerPermsTarget} onClose={() => setTravelerPermsTarget(null)} />
       <UserSettingsAdminDialog target={userSettingsTarget} onClose={() => setUserSettingsTarget(null)} />
 
       <section className="flex-1 px-3 sm:px-5 pt-5 pb-12 max-w-4xl w-full mx-auto">
@@ -204,8 +207,11 @@ const Admin = () => {
                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
                       <Clock3 className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setPermsTarget(u)} aria-label="Permissions" title="Permissions">
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setPermsTarget(u)} aria-label="Memory Map permissions" title="Memory Map permissions">
                       <Shield className="w-4 h-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setTravelerPermsTarget(u)} aria-label="Time Traveler permissions" title="Time Traveler permissions">
+                      <Compass className="w-4 h-4" />
                     </Button>
                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setUserSettingsTarget(u)} aria-label="User settings" title="User settings">
                       <SettingsIcon className="w-4 h-4" />
@@ -360,6 +366,7 @@ const UserDialog = ({
         // Default-grant CRUD on the user's own memory map (read-only otherwise)
         const s = getSettings();
         s.memoryMapCrud[created.id] = { create: false, update: false, delete: false };
+        s.travelerCrud[created.id] = { create: false, update: false, delete: false };
         saveSettings(s);
         toast({ title: "User created" });
         onSaved(created);
@@ -769,4 +776,62 @@ const UserSettingsAdminDialog = ({
 };
 
 export default Admin;
+
+const TravelerPermsDialog = ({
+  target,
+  onClose,
+}: {
+  target: User | null;
+  onClose: () => void;
+}) => {
+  const [perms, setPerms] = useState({ create: false, update: false, delete: false });
+
+  useEffect(() => {
+    if (!target) return;
+    const s = getSettings();
+    setPerms(s.travelerCrud[target.id] ?? { create: false, update: false, delete: false });
+  }, [target]);
+
+  if (!target) return null;
+
+  const save = () => {
+    const s = getSettings();
+    s.travelerCrud[target.id] = perms;
+    saveSettings(s);
+    pushNotice(target.id, "Admin updated your Time Traveler permissions");
+    toast({ title: `Time Traveler perms saved for ${target.profileName}` });
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Time Traveler access</DialogTitle>
+          <DialogDescription className="text-xs">
+            Choose what {target.profileName} can do with their Time Traveler plans.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          {(["create", "update", "delete"] as const).map((k) => (
+            <label
+              key={k}
+              className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30"
+            >
+              <span className="text-sm capitalize">{k}</span>
+              <Switch
+                checked={perms[k]}
+                onCheckedChange={(v) => setPerms((p) => ({ ...p, [k]: v }))}
+              />
+            </label>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
