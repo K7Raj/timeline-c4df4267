@@ -218,8 +218,8 @@ const TimeTraveler = () => {
                         key={p.id}
                         plan={p}
                         image={images[p.id]}
-                        onEdit={() => setEditing(p)}
-                        onDelete={() => setToDelete(p)}
+                        onEdit={canEdit ? () => setEditing(p) : undefined}
+                        onDelete={canDelete ? () => setToDelete(p) : undefined}
                       />
                     ))}
                   </div>
