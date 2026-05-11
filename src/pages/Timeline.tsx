@@ -200,6 +200,7 @@ const Timeline = () => {
 
   const load = async () => {
     if (!targetUserId) return;
+    setLoading(true);
     const list = await getEntries(targetUserId);
     setEntries(list);
     // Load media URLs in parallel for snappier rendering
@@ -213,6 +214,7 @@ const Timeline = () => {
       Object.values(prev).forEach((u) => URL.revokeObjectURL(u));
       return map;
     });
+    setLoading(false);
   };
 
   useEffect(() => {
