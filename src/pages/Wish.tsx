@@ -177,9 +177,9 @@ const Wish = () => {
               triggerReact();
             }}
             aria-label="Sprinkle magic"
-            className="relative w-9 h-9 rounded-xl flex items-center justify-center text-amber-200 hover:text-amber-100 hover:bg-amber-300/10 active:scale-95 transition"
+            className="relative w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-300/80 to-pink-300/80 text-purple-950 shadow-[0_0_18px_rgba(251,191,36,0.55)] hover:shadow-[0_0_24px_rgba(251,191,36,0.75)] hover:from-amber-200 hover:to-pink-200 active:scale-90 transition"
           >
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="w-4 h-4" />
           </button>
         </div>
       </header>
