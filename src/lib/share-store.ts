@@ -13,7 +13,7 @@
 
 import localforage from "localforage";
 import JSZip from "jszip";
-import { restoreTrackedKey, snapshotTrackedKeys, TRACKED_KEYS } from "./storage-bridge";
+import { restoreTrackedKey, snapshotTrackedKeys } from "./storage-bridge";
 
 const STORES = [
   { name: "gayu-vault", store: "meta" },
@@ -131,30 +131,160 @@ async function buildManifest(scope: Scope): Promise<VaultManifest> {
   return manifest;
 }
 
-async function applyManifest(manifest: VaultManifest, mode: "merge" | "replace") {
-  if (manifest.trackedKeys) {
-    if (mode === "replace") {
-      for (const k of TRACKED_KEYS) await restoreTrackedKey(k, null);
-    }
-    for (const [k, v] of Object.entries(manifest.trackedKeys)) {
-      await restoreTrackedKey(k, v);
-    }
+// Per-user, non-destructive merge. Only data for the userIds covered by
+// the manifest is replaced; users not present in the manifest are left
+// completely untouched (vault-users, settings, notices, timeline entries,
+// traveler plans, rhythm videos, multimedia, wishes, and their blobs).
+async function applyManifest(manifest: VaultManifest) {
+  // Determine the set of userIds the manifest carries data for. The
+  // exporter already filtered `vault-users` to the selected scope, so we
+  // can read it back to know who's in play.
+  let scopedIds: Set<string> | null = null;
+  const usersTracked = manifest.trackedKeys?.["vault-users"];
+  if (usersTracked) {
+    try {
+      const arr = JSON.parse(usersTracked) as Array<{ id: string }>;
+      scopedIds = new Set(arr.map((u) => u.id));
+    } catch { /* ignore */ }
   }
-  for (const s of STORES) {
-    const key = `${s.name}/${s.store}`;
-    const data = manifest.stores[key];
-    if (!data) continue;
-    const inst = localforage.createInstance({ name: s.name, storeName: s.store });
-    if (mode === "replace") await inst.clear();
-    for (const [k, v] of Object.entries(data)) {
-      const b = v as { __blob?: boolean; type?: string; data?: string };
-      if (b && b.__blob && typeof b.data === "string") {
-        await inst.setItem(k, base64ToBlob(b.data, b.type ?? "application/octet-stream"));
+
+  // ---- Tracked localStorage keys (merge per user) ----
+  if (manifest.trackedKeys) {
+    for (const [k, v] of Object.entries(manifest.trackedKeys)) {
+      if (k === "theme" || k === "media-view-prefs") continue; // device-local
+      if (k === "vault-users") {
+        try {
+          const incoming = JSON.parse(v) as Array<{ id: string }>;
+          const existingRaw = localStorage.getItem("vault-users");
+          const existing = existingRaw ? (JSON.parse(existingRaw) as Array<{ id: string }>) : [];
+          const incomingIds = new Set(incoming.map((u) => u.id));
+          const merged = [
+            ...existing.filter((u) => !incomingIds.has(u.id)),
+            ...incoming,
+          ];
+          await restoreTrackedKey("vault-users", JSON.stringify(merged));
+        } catch {
+          await restoreTrackedKey(k, v);
+        }
+      } else if (k === "app-settings-v2") {
+        try {
+          const incoming = JSON.parse(v) as { defaults?: unknown; users?: Record<string, unknown> };
+          const existingRaw = localStorage.getItem("app-settings-v2");
+          const existing = existingRaw
+            ? (JSON.parse(existingRaw) as { defaults?: unknown; users?: Record<string, unknown> })
+            : { defaults: incoming.defaults, users: {} };
+          const mergedUsers: Record<string, unknown> = { ...(existing.users ?? {}) };
+          for (const [uid, settings] of Object.entries(incoming.users ?? {})) {
+            if (!scopedIds || scopedIds.has(uid)) mergedUsers[uid] = settings;
+          }
+          // Preserve current defaults; only seed if device has none yet.
+          const merged = {
+            defaults: existing.defaults ?? incoming.defaults,
+            users: mergedUsers,
+          };
+          await restoreTrackedKey("app-settings-v2", JSON.stringify(merged));
+        } catch {
+          await restoreTrackedKey(k, v);
+        }
+      } else if (k === "notices-v1") {
+        try {
+          const incoming = JSON.parse(v) as Array<{ userId: string }>;
+          const existingRaw = localStorage.getItem("notices-v1");
+          const existing = existingRaw ? (JSON.parse(existingRaw) as Array<{ userId: string }>) : [];
+          const merged = scopedIds
+            ? [...existing.filter((n) => !scopedIds!.has(n.userId)), ...incoming]
+            : [...existing, ...incoming];
+          await restoreTrackedKey("notices-v1", JSON.stringify(merged));
+        } catch {
+          await restoreTrackedKey(k, v);
+        }
       } else {
-        await inst.setItem(k, v);
+        // Legacy keys (e.g. app-settings-v1) – overwrite directly.
+        await restoreTrackedKey(k, v);
       }
     }
   }
+
+  // ---- IndexedDB stores (merge per user) ----
+  // List-shaped stores: keep records whose userId isn't in scope, and
+  // append manifest records (which were filtered by userId at export).
+  const LIST_KEYS: Record<string, string> = {
+    "gayu-vault/timeline-meta": "entries",
+    "gayu-vault/traveler-meta": "plans",
+    "gayu-vault/rhythm-meta": "videos",
+    "gayu-vault/meta": "", // multi-key (folders + items)
+  };
+  const META_LIST_KEYS_FOR_META = ["folders", "items"];
+
+  // Helper: the matching blob store for each meta store.
+  const BLOB_PAIR: Record<string, string> = {
+    "gayu-vault/timeline-meta": "gayu-vault/timeline-blobs",
+    "gayu-vault/traveler-meta": "gayu-vault/traveler-blobs",
+    "gayu-vault/rhythm-meta": "gayu-vault/rhythm-blobs",
+    "gayu-vault/meta": "gayu-vault/blobs",
+  };
+
+  const inst = (path: string) => {
+    const [name, store] = path.split("/");
+    return localforage.createInstance({ name, storeName: store });
+  };
+
+  for (const metaPath of Object.keys(LIST_KEYS)) {
+    const data = manifest.stores[metaPath];
+    if (!data) continue;
+    const metaInst = inst(metaPath);
+    const blobInst = inst(BLOB_PAIR[metaPath]);
+    const incomingBlobs = manifest.stores[BLOB_PAIR[metaPath]] ?? {};
+
+    const listKeys = metaPath === "gayu-vault/meta" ? META_LIST_KEYS_FOR_META : [LIST_KEYS[metaPath]];
+
+    // Track which old blob ids are being dropped so we can remove them.
+    const removedIds = new Set<string>();
+    // Track new ids to know which incoming blobs to write.
+    const incomingIds = new Set<string>();
+
+    for (const listKey of listKeys) {
+      const incomingList = (data[listKey] as Array<{ id: string; userId: string }> | undefined) ?? [];
+      const existing = ((await metaInst.getItem<Array<{ id: string; userId: string }>>(listKey)) ?? []);
+      const dropIds = new Set(
+        existing
+          .filter((r) => !scopedIds || scopedIds.has(r.userId))
+          .map((r) => r.id),
+      );
+      dropIds.forEach((id) => removedIds.add(id));
+      incomingList.forEach((r) => incomingIds.add(r.id));
+      const kept = existing.filter((r) => !dropIds.has(r.id));
+      // Avoid duplicates: drop any kept record whose id collides with an incoming one.
+      const incomingIdSet = new Set(incomingList.map((r) => r.id));
+      const merged = [...kept.filter((r) => !incomingIdSet.has(r.id)), ...incomingList];
+      await metaInst.setItem(listKey, merged);
+    }
+
+    // Drop orphan blobs for replaced records, then write incoming blobs.
+    for (const id of removedIds) {
+      if (!incomingIds.has(id)) await blobInst.removeItem(id);
+    }
+    for (const [id, v] of Object.entries(incomingBlobs)) {
+      const b = v as { __blob?: boolean; type?: string; data?: string };
+      if (b && b.__blob && typeof b.data === "string") {
+        await blobInst.setItem(id, base64ToBlob(b.data, b.type ?? "application/octet-stream"));
+      }
+    }
+  }
+
+  // ---- Wishes (one key per user) ----
+  const wishData = manifest.stores["gayu-vault/wishes"];
+  if (wishData) {
+    const wishInst = inst("gayu-vault/wishes");
+    for (const [k, v] of Object.entries(wishData)) {
+      // key shape: "wishes:<userId>"
+      const uid = k.startsWith("wishes:") ? k.slice("wishes:".length) : null;
+      if (uid && scopedIds && !scopedIds.has(uid)) continue;
+      await wishInst.setItem(k, v);
+    }
+  }
+
+  // ---- kv-mirror is rebuilt automatically by restoreTrackedKey above ----
 }
 
 // ---- Crypto ----
@@ -261,7 +391,8 @@ export async function importEncryptedVault(
   if (manifest.version !== 2) {
     throw new Error("Unsupported vault version");
   }
-  await applyManifest(manifest, mode);
+  void mode;
+  await applyManifest(manifest);
 }
 
 // ---- Trigger native share sheet ----
