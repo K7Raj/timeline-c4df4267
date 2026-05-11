@@ -137,14 +137,16 @@ const TimeTraveler = () => {
             <Compass className="w-4 h-4 text-primary-foreground" />
           </div>
           <h1 className="text-lg font-bold text-gradient flex-1 truncate">Time Traveler</h1>
-          <Button
-            size="icon"
-            className="rounded-xl bg-gradient-primary text-primary-foreground"
-            onClick={() => { setEditing(null); setCreateOpen(true); }}
-            aria-label="Add plan"
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
+          {canCreate && (
+            <Button
+              size="icon"
+              className="rounded-xl bg-gradient-primary text-primary-foreground"
+              onClick={() => { setEditing(null); setCreateOpen(true); }}
+              aria-label="Add plan"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          )}
         </div>
 
         <div className="px-3 sm:px-4 pb-3 max-w-2xl mx-auto flex items-center gap-2">
