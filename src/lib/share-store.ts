@@ -391,7 +391,8 @@ export async function importEncryptedVault(
   if (manifest.version !== 2) {
     throw new Error("Unsupported vault version");
   }
-  await applyManifest(manifest, mode);
+  void mode;
+  await applyManifest(manifest);
 }
 
 // ---- Trigger native share sheet ----
