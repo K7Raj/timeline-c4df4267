@@ -116,7 +116,16 @@ const Surprise = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-lg font-bold text-gradient flex-1">Surprise</h1>
-          <PartyPopper className="w-5 h-5 text-primary" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-xl text-primary hover:bg-primary/10"
+            onClick={fireConfetti}
+            aria-label="Pop confetti"
+            title="Pop confetti"
+          >
+            <PartyPopper className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
