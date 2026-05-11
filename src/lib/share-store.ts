@@ -13,7 +13,7 @@
 
 import localforage from "localforage";
 import JSZip from "jszip";
-import { restoreTrackedKey, snapshotTrackedKeys, TRACKED_KEYS } from "./storage-bridge";
+import { restoreTrackedKey, snapshotTrackedKeys } from "./storage-bridge";
 
 const STORES = [
   { name: "gayu-vault", store: "meta" },
