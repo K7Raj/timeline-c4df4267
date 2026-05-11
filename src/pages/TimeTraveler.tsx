@@ -234,7 +234,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={() => setEditing(p)} onDelete={() => setToDelete(p)} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
                   ))}
                 </div>
               </div>
@@ -243,7 +243,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} onEdit={() => setEditing(p)} onDelete={() => setToDelete(p)} />
+              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -252,7 +252,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={() => setEditing(p)} onDelete={() => setToDelete(p)} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
                   ))}
                 </div>
               </div>
