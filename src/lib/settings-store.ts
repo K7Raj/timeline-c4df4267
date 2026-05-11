@@ -105,7 +105,8 @@ function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
     welcomeHeading: o.welcomeHeading ?? d.welcomeHeading,
     quotes: o.quotes ?? d.quotes,
     enabledTabs: { ...d.enabledTabs, ...(o.enabledTabs ?? {}) },
-    memoryMapCrud: d.memoryMapCrud, // permissions stay on defaults
+    memoryMapCrud: d.memoryMapCrud,
+    travelerCrud: d.travelerCrud,
     surpriseWishes: o.surpriseWishes ?? d.surpriseWishes,
     rhythmName: o.rhythmName ?? d.rhythmName,
   };
