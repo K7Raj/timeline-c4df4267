@@ -49,6 +49,7 @@ import {
   renameFolder,
 } from "@/lib/media-store";
 import { getCurrentUser } from "@/lib/auth-store";
+import { useSettings } from "@/lib/settings-store";
 
 const Media = () => {
   const navigate = useNavigate();
