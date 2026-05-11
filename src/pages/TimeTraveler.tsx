@@ -51,6 +51,10 @@ const daysFromNow = (ts: number) => {
 const TimeTraveler = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
+  const perms = user ? getTravelerPerms(user, user.id) : { create: false, update: false, delete: false };
+  const canCreate = perms.create;
+  const canEdit = perms.update;
+  const canDelete = perms.delete;
   const [plans, setPlans] = useState<TravelerPlan[]>([]);
   const [view, setView] = useState<"months" | "days">("months");
   const [editing, setEditing] = useState<TravelerPlan | null>(null);
