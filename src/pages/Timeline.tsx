@@ -151,6 +151,7 @@ const Timeline = () => {
   const [toDelete, setToDelete] = useState<TimelineEntry | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pulseId, setPulseId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
