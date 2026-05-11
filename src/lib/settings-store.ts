@@ -58,6 +58,7 @@ function readStore(): Store {
         defaults: { ...defaults, ...(parsed.defaults ?? {}),
           enabledTabs: { ...defaults.enabledTabs, ...(parsed.defaults?.enabledTabs ?? {}) },
           memoryMapCrud: { ...(parsed.defaults?.memoryMapCrud ?? {}) },
+          travelerCrud: { ...(parsed.defaults?.travelerCrud ?? {}) },
         },
         users: parsed.users ?? {},
       };
@@ -72,6 +73,7 @@ function readStore(): Store {
           ...p,
           enabledTabs: { ...defaults.enabledTabs, ...(p.enabledTabs ?? {}) },
           memoryMapCrud: { ...(p.memoryMapCrud ?? {}) },
+          travelerCrud: { ...(p.travelerCrud ?? {}) },
         },
         users: {},
       };
