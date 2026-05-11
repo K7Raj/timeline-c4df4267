@@ -30,12 +30,18 @@ const Wish = () => {
   };
 
   const spawnStars = () => {
-    const batch = Array.from({ length: 14 }).map((_, i) => ({
-      id: Date.now() + i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 14 + Math.random() * 22,
-    }));
+    // Cluster sparkles around the genie (center, ~40-60% horizontally,
+    // ~35-65% vertically) instead of all over the screen.
+    const batch = Array.from({ length: 14 }).map((_, i) => {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 8 + Math.random() * 22; // % from center
+      return {
+        id: Date.now() + i,
+        x: 50 + Math.cos(angle) * radius,
+        y: 50 + Math.sin(angle) * radius,
+        size: 12 + Math.random() * 20,
+      };
+    });
     setBursts((b) => [...b, ...batch]);
     window.setTimeout(() => {
       setBursts((b) => b.filter((s) => !batch.find((x) => x.id === s.id)));
