@@ -380,14 +380,20 @@ const PlanRow = ({
           {plan.location ? ` · ${plan.location}` : ""}
         </p>
       </div>
-      <div className="flex items-center gap-0.5">
-        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onEdit}>
-          <Pencil className="w-3.5 h-3.5" />
-        </Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive" onClick={onDelete}>
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
+      {(onEdit || onDelete) && (
+        <div className="flex items-center gap-0.5">
+          {onEdit && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onEdit}>
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive" onClick={onDelete}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
