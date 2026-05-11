@@ -776,3 +776,61 @@ const UserSettingsAdminDialog = ({
 
 export default Admin;
 
+const TravelerPermsDialog = ({
+  target,
+  onClose,
+}: {
+  target: User | null;
+  onClose: () => void;
+}) => {
+  const [perms, setPerms] = useState({ create: false, update: false, delete: false });
+
+  useEffect(() => {
+    if (!target) return;
+    const s = getSettings();
+    setPerms(s.travelerCrud[target.id] ?? { create: false, update: false, delete: false });
+  }, [target]);
+
+  if (!target) return null;
+
+  const save = () => {
+    const s = getSettings();
+    s.travelerCrud[target.id] = perms;
+    saveSettings(s);
+    pushNotice(target.id, "Admin updated your Time Traveler permissions");
+    toast({ title: `Time Traveler perms saved for ${target.profileName}` });
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Time Traveler access</DialogTitle>
+          <DialogDescription className="text-xs">
+            Choose what {target.profileName} can do with their Time Traveler plans.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          {(["create", "update", "delete"] as const).map((k) => (
+            <label
+              key={k}
+              className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30"
+            >
+              <span className="text-sm capitalize">{k}</span>
+              <Switch
+                checked={perms[k]}
+                onCheckedChange={(v) => setPerms((p) => ({ ...p, [k]: v }))}
+              />
+            </label>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
