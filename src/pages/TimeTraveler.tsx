@@ -331,14 +331,20 @@ const PlanCard = ({
         {plan.notes && (
           <p className="mt-1.5 text-xs text-foreground/80 line-clamp-2 whitespace-pre-wrap">{plan.notes}</p>
         )}
-        <div className="mt-2 flex items-center justify-end gap-1">
-          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg" onClick={onEdit}>
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-destructive" onClick={onDelete}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+        {(onEdit || onDelete) && (
+          <div className="mt-2 flex items-center justify-end gap-1">
+            {onEdit && (
+              <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg" onClick={onEdit}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-destructive" onClick={onDelete}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
