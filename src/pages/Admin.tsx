@@ -366,6 +366,7 @@ const UserDialog = ({
         // Default-grant CRUD on the user's own memory map (read-only otherwise)
         const s = getSettings();
         s.memoryMapCrud[created.id] = { create: false, update: false, delete: false };
+        s.travelerCrud[created.id] = { create: false, update: false, delete: false };
         saveSettings(s);
         toast({ title: "User created" });
         onSaved(created);
