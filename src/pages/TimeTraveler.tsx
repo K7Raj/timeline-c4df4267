@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { getCurrentUser } from "@/lib/auth-store";
+import { getTravelerPerms } from "@/lib/settings-store";
 import {
   createPlan, deletePlan, getPlanImageUrl, listPlans, updatePlan,
   type PlanKind, type TravelerPlan,
