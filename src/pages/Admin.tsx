@@ -16,6 +16,7 @@ import {
   Settings as SettingsIcon,
   Sparkles,
   Lamp,
+  Compass,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
