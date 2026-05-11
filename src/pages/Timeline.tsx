@@ -453,7 +453,12 @@ const Timeline = () => {
       </header>
 
       <section className="flex-1 px-3 sm:px-5 pt-4 pb-10 max-w-2xl w-full mx-auto">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-xs text-muted-foreground">
+            <span className="inline-block w-4 h-4 mr-2 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            Loading your memories…
+          </div>
+        ) : filtered.length === 0 ? (
           <EmptyState onAdd={openCreate} hasEntries={entries.length > 0} canEdit={canCreate} />
         ) : (
           <CandyMap
