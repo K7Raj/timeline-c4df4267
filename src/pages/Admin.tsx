@@ -207,8 +207,11 @@ const Admin = () => {
                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
                       <Clock3 className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setPermsTarget(u)} aria-label="Permissions" title="Permissions">
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setPermsTarget(u)} aria-label="Memory Map permissions" title="Memory Map permissions">
                       <Shield className="w-4 h-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setTravelerPermsTarget(u)} aria-label="Time Traveler permissions" title="Time Traveler permissions">
+                      <Compass className="w-4 h-4" />
                     </Button>
                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setUserSettingsTarget(u)} aria-label="User settings" title="User settings">
                       <SettingsIcon className="w-4 h-4" />
