@@ -164,3 +164,11 @@ export function getMemoryMapPerms(user: User | null, targetUserId: string) {
   const s = readStore();
   return s.defaults.memoryMapCrud[user.id] ?? { create: false, update: false, delete: false };
 }
+
+export function getTravelerPerms(user: User | null, targetUserId: string) {
+  if (!user) return { create: false, update: false, delete: false };
+  if (user.role === "admin") return { create: true, update: true, delete: true };
+  if (user.id !== targetUserId) return { create: false, update: false, delete: false };
+  const s = readStore();
+  return s.defaults.travelerCrud[user.id] ?? { create: false, update: false, delete: false };
+}
