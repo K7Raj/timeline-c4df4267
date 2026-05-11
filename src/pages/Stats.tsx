@@ -3,10 +3,17 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
+  Compass, ArrowRightCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
-import { getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
+import { createEntry, getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
+import { deletePlan, listPlans, type TravelerPlan } from "@/lib/traveler-store";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface Bucket { key: string; label: string; count: number }
 
