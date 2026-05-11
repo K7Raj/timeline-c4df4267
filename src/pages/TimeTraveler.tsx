@@ -293,7 +293,7 @@ const TimeTraveler = () => {
 
 const PlanCard = ({
   plan, image, onEdit, onDelete,
-}: { plan: TravelerPlan; image?: string; onEdit: () => void; onDelete: () => void }) => {
+}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   return (
