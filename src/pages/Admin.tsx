@@ -78,6 +78,7 @@ const Admin = () => {
   const [shareOpen, setShareOpen] = useState(false);
   
   const [permsTarget, setPermsTarget] = useState<User | null>(null);
+  const [travelerPermsTarget, setTravelerPermsTarget] = useState<User | null>(null);
   const [resetWishTarget, setResetWishTarget] = useState<User | null>(null);
   const [userSettingsTarget, setUserSettingsTarget] = useState<User | null>(null);
   const { theme, toggle } = useTheme();
