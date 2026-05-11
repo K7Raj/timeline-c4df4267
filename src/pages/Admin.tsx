@@ -153,6 +153,7 @@ const Admin = () => {
 
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
       <PermsDialog target={permsTarget} onClose={() => setPermsTarget(null)} />
+      <TravelerPermsDialog target={travelerPermsTarget} onClose={() => setTravelerPermsTarget(null)} />
       <UserSettingsAdminDialog target={userSettingsTarget} onClose={() => setUserSettingsTarget(null)} />
 
       <section className="flex-1 px-3 sm:px-5 pt-5 pb-12 max-w-4xl w-full mx-auto">
