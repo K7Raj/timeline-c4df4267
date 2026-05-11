@@ -186,12 +186,14 @@ const TimeTraveler = () => {
             <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-5">
               Trips, activities, visits, events — never miss a thing. Add your first plan.
             </p>
-            <Button
-              onClick={() => { setEditing(null); setCreateOpen(true); }}
-              className="rounded-xl bg-gradient-primary text-primary-foreground"
-            >
-              <Plus className="w-4 h-4" /> Add a plan
-            </Button>
+            {canCreate && (
+              <Button
+                onClick={() => { setEditing(null); setCreateOpen(true); }}
+                className="rounded-xl bg-gradient-primary text-primary-foreground"
+              >
+                <Plus className="w-4 h-4" /> Add a plan
+              </Button>
+            )}
           </div>
         ) : view === "months" ? (
           <div className="space-y-5">
