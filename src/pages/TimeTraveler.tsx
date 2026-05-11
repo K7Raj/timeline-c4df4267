@@ -352,7 +352,7 @@ const PlanCard = ({
 
 const PlanRow = ({
   plan, onEdit, onDelete,
-}: { plan: TravelerPlan; onEdit: () => void; onDelete: () => void }) => {
+}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   return (
