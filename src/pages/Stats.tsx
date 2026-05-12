@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, ArrowRightCircle,
+  Compass, ArrowRightCircle, Smile,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
@@ -219,6 +219,19 @@ const Stats = () => {
     });
     return out.sort((a, b) => a.inDays - b.inDays).slice(0, 4);
   }, [summary, today]);
+
+  // Enjoyment / emotions distribution from both Memory Map and Time Traveler
+  const FACES = ["😞", "🙁", "😐", "🙂", "😄"];
+  const FACE_LABELS = ["Awful", "Meh", "OK", "Good", "Loved"];
+  const emotions = useMemo(() => {
+    const dist = [0, 0, 0, 0, 0];
+    let total = 0, sum = 0;
+    [...entries, ...plans].forEach((it) => {
+      const v = (it as { enjoyment?: number }).enjoyment;
+      if (v && v >= 1 && v <= 5) { dist[v - 1]++; total++; sum += v; }
+    });
+    return { dist, total, avg: total ? sum / total : 0 };
+  }, [entries, plans]);
 
   const ago = (ts: number) => {
     const diff = Date.now() - ts;
