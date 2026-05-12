@@ -65,6 +65,7 @@ import {
   type TabKey,
 } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
+import { setSoundEnabled } from "@/lib/sound";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -76,7 +77,8 @@ const Admin = () => {
   const [pwTarget, setPwTarget] = useState<User | null>(null);
   const [delTarget, setDelTarget] = useState<User | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  
+  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+
   const [permsTarget, setPermsTarget] = useState<User | null>(null);
   const [travelerPermsTarget, setTravelerPermsTarget] = useState<User | null>(null);
   const [resetWishTarget, setResetWishTarget] = useState<User | null>(null);
@@ -142,6 +144,9 @@ const Admin = () => {
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={toggle} aria-label="Theme">
             {theme === "dark" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </Button>
+          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setGlobalSettingsOpen(true)} aria-label="Settings" title="App settings">
+            <SettingsIcon className="w-5 h-5" />
+          </Button>
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setShareOpen(true)} aria-label="Share">
             <Share2 className="w-5 h-5" />
           </Button>
@@ -152,6 +157,7 @@ const Admin = () => {
       </header>
 
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
+      <SettingsDialog open={globalSettingsOpen} onOpenChange={setGlobalSettingsOpen} users={users} />
       <PermsDialog target={permsTarget} onClose={() => setPermsTarget(null)} />
       <TravelerPermsDialog target={travelerPermsTarget} onClose={() => setTravelerPermsTarget(null)} />
       <UserSettingsAdminDialog target={userSettingsTarget} onClose={() => setUserSettingsTarget(null)} />
