@@ -902,6 +902,8 @@ const EntryDialog = ({
           content: content.trim(),
           date: ts,
           endDate: ets,
+          location: location.trim() || undefined,
+          enjoyment,
           file,
           removeMedia,
         });
@@ -912,6 +914,8 @@ const EntryDialog = ({
           content: content.trim(),
           date: ts,
           endDate: ets,
+          location: location.trim() || undefined,
+          enjoyment,
           file,
         });
         toast({ title: "Moment added ✨" });
@@ -949,6 +953,33 @@ const EntryDialog = ({
           <div>
             <label className="text-xs font-medium text-muted-foreground">Title</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A memorable moment" className="mt-1 rounded-xl" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <MapPin className="w-3 h-3" /> Location (optional)
+            </label>
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Yercaud, Tamil Nadu"
+              className="mt-1 rounded-xl"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">How did it feel?</label>
+            <div className="mt-1 flex items-center justify-between p-2 rounded-xl border border-border bg-secondary/30">
+              <SmileRating value={enjoyment} onChange={setEnjoyment} />
+              {enjoyment ? (
+                <button
+                  type="button"
+                  data-no-sound
+                  onClick={() => setEnjoyment(undefined)}
+                  className="text-[0.65rem] text-muted-foreground hover:text-destructive"
+                >
+                  clear
+                </button>
+              ) : null}
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Short detail</label>
