@@ -7,6 +7,8 @@ export interface TimelineEntry {
   endDate?: number;
   title: string;
   content: string;
+  location?: string;
+  enjoyment?: number; // 1..5
   mediaKind?: "image" | "video";
   mediaMime?: string;
   createdAt: number;
@@ -44,7 +46,7 @@ async function readAll() {
 
 export async function createEntry(
   userId: string,
-  data: { date: number; endDate?: number; title: string; content: string; file?: File | null },
+  data: { date: number; endDate?: number; title: string; content: string; location?: string; enjoyment?: number; file?: File | null },
 ): Promise<TimelineEntry> {
   const all = await readAll();
   const entry: TimelineEntry = {
@@ -54,6 +56,8 @@ export async function createEntry(
     endDate: data.endDate,
     title: data.title,
     content: data.content,
+    location: data.location,
+    enjoyment: data.enjoyment,
     createdAt: Date.now(),
   };
   if (data.file) {
@@ -67,7 +71,7 @@ export async function createEntry(
 
 export async function updateEntry(
   id: string,
-  data: { date: number; endDate?: number; title: string; content: string; file?: File | null; removeMedia?: boolean },
+  data: { date: number; endDate?: number; title: string; content: string; location?: string; enjoyment?: number; file?: File | null; removeMedia?: boolean },
 ) {
   const all = await readAll();
   const next = await Promise.all(
@@ -79,6 +83,8 @@ export async function updateEntry(
         endDate: data.endDate,
         title: data.title,
         content: data.content,
+        location: data.location,
+        enjoyment: data.enjoyment,
       };
       if (data.removeMedia) {
         await blobStore.removeItem(id);
