@@ -68,6 +68,7 @@ import {
 import { getCurrentUser, getUser } from "@/lib/auth-store";
 import { getMemoryMapPerms } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
+import { SmileRating, SmileBadge } from "@/components/SmileRating";
 
 type RangeKey = "all" | "30d" | "6m" | "year" | "custom";
 
@@ -704,6 +705,23 @@ const CandyMap = ({
                     </span>
                   </div>
                   <h3 className="text-sm font-bold leading-snug">{e.title}</h3>
+                  {e.location && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-sound="open"
+                      className="inline-flex items-center gap-1 text-[0.7rem] text-primary hover:underline"
+                    >
+                      <MapPin className="w-3 h-3" /> {e.location}
+                    </a>
+                  )}
+                  {e.enjoyment ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">Felt:</span>
+                      <SmileRating value={e.enjoyment} readOnly size="sm" />
+                    </div>
+                  ) : null}
                   {e.content && (
                     <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
                       {e.content}
