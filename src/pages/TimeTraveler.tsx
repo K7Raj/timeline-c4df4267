@@ -488,6 +488,7 @@ const PlanDialog = ({
       startDate: new Date(start).getTime(),
       endDate: end ? new Date(end).getTime() : undefined,
       location: location.trim() || undefined,
+      enjoyment,
       file,
       removeMedia: remove,
     });
@@ -540,8 +541,21 @@ const PlanDialog = ({
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Location</label>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1 rounded-xl" placeholder="optional" />
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <MapPin className="w-3 h-3" /> Location
+            </label>
+            <Input value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1 rounded-xl" placeholder="e.g. Yercaud, Tamil Nadu" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Excitement level</label>
+            <div className="mt-1 flex items-center justify-between p-2 rounded-xl border border-border bg-secondary/30">
+              <SmileRating value={enjoyment} onChange={setEnjoyment} />
+              {enjoyment ? (
+                <button type="button" data-no-sound onClick={() => setEnjoyment(undefined)} className="text-[0.65rem] text-muted-foreground hover:text-destructive">
+                  clear
+                </button>
+              ) : null}
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Notes</label>
