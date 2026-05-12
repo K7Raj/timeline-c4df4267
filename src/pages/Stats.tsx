@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, ArrowRightCircle,
+  Compass, ArrowRightCircle, Smile,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
@@ -220,6 +220,19 @@ const Stats = () => {
     return out.sort((a, b) => a.inDays - b.inDays).slice(0, 4);
   }, [summary, today]);
 
+  // Enjoyment / emotions distribution from both Memory Map and Time Traveler
+  const FACES = ["😞", "🙁", "😐", "🙂", "😄"];
+  const FACE_LABELS = ["Awful", "Meh", "OK", "Good", "Loved"];
+  const emotions = useMemo(() => {
+    const dist = [0, 0, 0, 0, 0];
+    let total = 0, sum = 0;
+    [...entries, ...plans].forEach((it) => {
+      const v = (it as { enjoyment?: number }).enjoyment;
+      if (v && v >= 1 && v <= 5) { dist[v - 1]++; total++; sum += v; }
+    });
+    return { dist, total, avg: total ? sum / total : 0 };
+  }, [entries, plans]);
+
   const ago = (ts: number) => {
     const diff = Date.now() - ts;
     if (diff < 0) return "in the future";
@@ -346,6 +359,47 @@ const Stats = () => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Emotions */}
+            <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
+              <h2 className="text-sm font-bold flex items-center gap-2 mb-1">
+                <Smile className="w-4 h-4 text-primary" /> Emotions
+              </h2>
+              <p className="text-[0.7rem] text-muted-foreground mb-3">
+                How your memories &amp; plans felt overall.
+              </p>
+              {emotions.total === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  Rate your memories with smiles to see your mood mix.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="text-3xl">{FACES[Math.round(emotions.avg) - 1] ?? "🙂"}</div>
+                    <div>
+                      <p className="text-2xl font-bold text-gradient leading-none">{emotions.avg.toFixed(1)}<span className="text-sm text-muted-foreground"> / 5</span></p>
+                      <p className="text-[0.65rem] text-muted-foreground uppercase tracking-wider">Average · {emotions.total} rated</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {emotions.dist.map((c, i) => {
+                      const pct = emotions.total ? Math.round((c / emotions.total) * 100) : 0;
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="text-base w-6 text-center">{FACES[i]}</span>
+                          <div className="flex-1 h-2.5 rounded-full bg-secondary overflow-hidden">
+                            <div className="h-full bg-gradient-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-[0.7rem] text-muted-foreground w-20 text-right">
+                            <span className="font-bold text-foreground">{c}</span> · {FACE_LABELS[i]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* On THIS exact date (day + month) */}

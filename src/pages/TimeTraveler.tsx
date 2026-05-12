@@ -22,6 +22,7 @@ import {
   createPlan, deletePlan, getPlanImageUrl, listPlans, updatePlan,
   type PlanKind, type TravelerPlan,
 } from "@/lib/traveler-store";
+import { SmileRating, SmileBadge } from "@/components/SmileRating";
 
 const KIND_META: Record<PlanKind, { label: string; Icon: typeof Plane; color: string }> = {
   trip:     { label: "Trip",     Icon: Plane,        color: "from-sky-500 to-indigo-500" },
@@ -117,8 +118,9 @@ const TimeTraveler = () => {
       await createPlan(user.id, {
         title: data.title, notes: data.notes, kind: data.kind,
         startDate: data.startDate, endDate: data.endDate, location: data.location,
+        enjoyment: data.enjoyment,
         file: data.file,
-      });
+      } as Parameters<typeof createPlan>[1]);
       toast({ title: "Plan added ✨" });
     }
     setEditing(null);
@@ -324,10 +326,19 @@ const PlanCard = ({
           {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
         </div>
         {plan.location && (
-          <div className="mt-0.5 text-[0.7rem] text-muted-foreground flex items-center gap-1">
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(plan.location)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-sound="open"
+            className="mt-0.5 text-[0.7rem] text-primary hover:underline flex items-center gap-1"
+          >
             <MapPin className="w-3 h-3" /> {plan.location}
-          </div>
+          </a>
         )}
+        {plan.enjoyment ? (
+          <div className="mt-1"><SmileRating value={plan.enjoyment} readOnly size="sm" /></div>
+        ) : null}
         {plan.notes && (
           <p className="mt-1.5 text-xs text-foreground/80 line-clamp-2 whitespace-pre-wrap">{plan.notes}</p>
         )}
@@ -379,6 +390,9 @@ const PlanRow = ({
           {plan.endDate ? ` → ${fmtDay(plan.endDate)}` : ""}
           {plan.location ? ` · ${plan.location}` : ""}
         </p>
+        {plan.enjoyment ? (
+          <div className="mt-0.5"><SmileBadge value={plan.enjoyment} /></div>
+        ) : null}
       </div>
       {(onEdit || onDelete) && (
         <div className="flex items-center gap-0.5">
@@ -405,6 +419,7 @@ interface PlanForm {
   startDate: number;
   endDate?: number;
   location?: string;
+  enjoyment?: number;
   file?: File | null;
   removeMedia?: boolean;
 }
@@ -423,6 +438,7 @@ const PlanDialog = ({
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [location, setLocation] = useState("");
+  const [enjoyment, setEnjoyment] = useState<number | undefined>(undefined);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [existing, setExisting] = useState<string | null>(null);
@@ -437,6 +453,7 @@ const PlanDialog = ({
       setStart(new Date(editing.startDate).toISOString().slice(0, 10));
       setEnd(editing.endDate ? new Date(editing.endDate).toISOString().slice(0, 10) : "");
       setLocation(editing.location ?? "");
+      setEnjoyment(editing.enjoyment);
       setRemove(false);
       (async () => {
         if (editing.mediaKind) setExisting(await getPlanImageUrl(editing.id));
@@ -445,7 +462,7 @@ const PlanDialog = ({
     } else {
       setTitle(""); setNotes(""); setKind("trip");
       setStart(new Date().toISOString().slice(0, 10));
-      setEnd(""); setLocation(""); setExisting(null); setRemove(false);
+      setEnd(""); setLocation(""); setEnjoyment(undefined); setExisting(null); setRemove(false);
     }
     setFile(null); setPreview(null);
   }, [open, editing]);
@@ -471,6 +488,7 @@ const PlanDialog = ({
       startDate: new Date(start).getTime(),
       endDate: end ? new Date(end).getTime() : undefined,
       location: location.trim() || undefined,
+      enjoyment,
       file,
       removeMedia: remove,
     });
@@ -523,8 +541,21 @@ const PlanDialog = ({
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Location</label>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1 rounded-xl" placeholder="optional" />
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <MapPin className="w-3 h-3" /> Location
+            </label>
+            <Input value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1 rounded-xl" placeholder="e.g. Yercaud, Tamil Nadu" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Excitement level</label>
+            <div className="mt-1 flex items-center justify-between p-2 rounded-xl border border-border bg-secondary/30">
+              <SmileRating value={enjoyment} onChange={setEnjoyment} />
+              {enjoyment ? (
+                <button type="button" data-no-sound onClick={() => setEnjoyment(undefined)} className="text-[0.65rem] text-muted-foreground hover:text-destructive">
+                  clear
+                </button>
+              ) : null}
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Notes</label>

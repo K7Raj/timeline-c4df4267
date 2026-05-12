@@ -65,6 +65,7 @@ import {
   type TabKey,
 } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
+import { setSoundEnabled } from "@/lib/sound";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -76,7 +77,8 @@ const Admin = () => {
   const [pwTarget, setPwTarget] = useState<User | null>(null);
   const [delTarget, setDelTarget] = useState<User | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  
+  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+
   const [permsTarget, setPermsTarget] = useState<User | null>(null);
   const [travelerPermsTarget, setTravelerPermsTarget] = useState<User | null>(null);
   const [resetWishTarget, setResetWishTarget] = useState<User | null>(null);
@@ -142,6 +144,9 @@ const Admin = () => {
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={toggle} aria-label="Theme">
             {theme === "dark" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </Button>
+          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setGlobalSettingsOpen(true)} aria-label="Settings" title="App settings">
+            <SettingsIcon className="w-5 h-5" />
+          </Button>
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setShareOpen(true)} aria-label="Share">
             <Share2 className="w-5 h-5" />
           </Button>
@@ -152,6 +157,7 @@ const Admin = () => {
       </header>
 
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
+      <SettingsDialog open={globalSettingsOpen} onOpenChange={setGlobalSettingsOpen} users={users} />
       <PermsDialog target={permsTarget} onClose={() => setPermsTarget(null)} />
       <TravelerPermsDialog target={travelerPermsTarget} onClose={() => setTravelerPermsTarget(null)} />
       <UserSettingsAdminDialog target={userSettingsTarget} onClose={() => setUserSettingsTarget(null)} />
@@ -557,6 +563,7 @@ const SettingsDialog = ({
 
   const save = () => {
     saveSettings(s);
+    setSoundEnabled(s.soundEnabled);
     // Notify all non-admin users about the update
     users.filter((u) => u.role === "user").forEach((u) =>
       pushNotice(u.id, "Admin updated app settings (welcome, quotes or tabs)"),
@@ -597,6 +604,14 @@ const SettingsDialog = ({
               className="mt-1 rounded-xl"
             />
           </div>
+
+          <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+            <div>
+              <p className="text-sm font-medium">App sounds</p>
+              <p className="text-[0.65rem] text-muted-foreground">Soft taps, chimes &amp; sparkles across the app.</p>
+            </div>
+            <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
+          </label>
 
           <div>
             <label className="text-xs font-medium text-muted-foreground">Home quotes (one per line)</label>
