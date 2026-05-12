@@ -87,8 +87,10 @@ export function installSoundDelegate() {
       );
       if (!el) return;
       if (el.hasAttribute("data-no-sound") || el.getAttribute("data-sound") === "off") return;
-      const explicit = el.getAttribute("data-sound") as SoundName | null;
-      playSound(explicit && explicit !== "off" ? explicit : "tap");
+      const explicit = el.getAttribute("data-sound");
+      const valid: SoundName[] = ["tap","open","success","sparkle","back","navigate","error","wish"];
+      const name = (explicit && valid.includes(explicit as SoundName)) ? (explicit as SoundName) : "tap";
+      playSound(name);
     },
     { capture: true, passive: true },
   );
