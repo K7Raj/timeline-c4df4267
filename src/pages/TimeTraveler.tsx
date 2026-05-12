@@ -22,6 +22,7 @@ import {
   createPlan, deletePlan, getPlanImageUrl, listPlans, updatePlan,
   type PlanKind, type TravelerPlan,
 } from "@/lib/traveler-store";
+import { SmileRating, SmileBadge } from "@/components/SmileRating";
 
 const KIND_META: Record<PlanKind, { label: string; Icon: typeof Plane; color: string }> = {
   trip:     { label: "Trip",     Icon: Plane,        color: "from-sky-500 to-indigo-500" },
@@ -117,8 +118,9 @@ const TimeTraveler = () => {
       await createPlan(user.id, {
         title: data.title, notes: data.notes, kind: data.kind,
         startDate: data.startDate, endDate: data.endDate, location: data.location,
+        enjoyment: data.enjoyment,
         file: data.file,
-      });
+      } as Parameters<typeof createPlan>[1]);
       toast({ title: "Plan added ✨" });
     }
     setEditing(null);
@@ -324,10 +326,19 @@ const PlanCard = ({
           {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
         </div>
         {plan.location && (
-          <div className="mt-0.5 text-[0.7rem] text-muted-foreground flex items-center gap-1">
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(plan.location)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-sound="open"
+            className="mt-0.5 text-[0.7rem] text-primary hover:underline flex items-center gap-1"
+          >
             <MapPin className="w-3 h-3" /> {plan.location}
-          </div>
+          </a>
         )}
+        {plan.enjoyment ? (
+          <div className="mt-1"><SmileRating value={plan.enjoyment} readOnly size="sm" /></div>
+        ) : null}
         {plan.notes && (
           <p className="mt-1.5 text-xs text-foreground/80 line-clamp-2 whitespace-pre-wrap">{plan.notes}</p>
         )}
@@ -379,6 +390,9 @@ const PlanRow = ({
           {plan.endDate ? ` → ${fmtDay(plan.endDate)}` : ""}
           {plan.location ? ` · ${plan.location}` : ""}
         </p>
+        {plan.enjoyment ? (
+          <div className="mt-0.5"><SmileBadge value={plan.enjoyment} /></div>
+        ) : null}
       </div>
       {(onEdit || onDelete) && (
         <div className="flex items-center gap-0.5">
@@ -405,6 +419,7 @@ interface PlanForm {
   startDate: number;
   endDate?: number;
   location?: string;
+  enjoyment?: number;
   file?: File | null;
   removeMedia?: boolean;
 }
