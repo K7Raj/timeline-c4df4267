@@ -847,6 +847,8 @@ const EntryDialog = ({
       setContent(entry.content);
       setDate(new Date(entry.date).toISOString().slice(0, 10));
       setEndDate(entry.endDate ? new Date(entry.endDate).toISOString().slice(0, 10) : "");
+      setLocation(entry.location ?? "");
+      setEnjoyment(entry.enjoyment);
       (async () => {
         if (entry.mediaKind) {
           const url = await getEntryBlobUrl(entry.id);
@@ -860,6 +862,8 @@ const EntryDialog = ({
       setContent("");
       setDate(new Date().toISOString().slice(0, 10));
       setEndDate("");
+      setLocation("");
+      setEnjoyment(undefined);
       setExistingPreview(null);
     }
     setFile(null);
