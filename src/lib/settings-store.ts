@@ -19,6 +19,7 @@ export interface AppSettings {
   travelerCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
   surpriseWishes: string[];
   rhythmName: string;
+  soundEnabled: boolean;
 }
 
 const KEY = "app-settings-v2";
@@ -42,6 +43,7 @@ const defaults: AppSettings = {
     "You are loved beyond words 💕",
   ],
   rhythmName: "Rhythm of Us",
+  soundEnabled: true,
 };
 
 interface Store {
@@ -111,6 +113,7 @@ function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
     travelerCrud: d.travelerCrud,
     surpriseWishes: o.surpriseWishes ?? d.surpriseWishes,
     rhythmName: o.rhythmName ?? d.rhythmName,
+    soundEnabled: o.soundEnabled ?? d.soundEnabled,
   };
 }
 
