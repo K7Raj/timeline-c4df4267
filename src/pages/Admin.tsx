@@ -563,6 +563,7 @@ const SettingsDialog = ({
 
   const save = () => {
     saveSettings(s);
+    setSoundEnabled(s.soundEnabled);
     // Notify all non-admin users about the update
     users.filter((u) => u.role === "user").forEach((u) =>
       pushNotice(u.id, "Admin updated app settings (welcome, quotes or tabs)"),
@@ -603,6 +604,14 @@ const SettingsDialog = ({
               className="mt-1 rounded-xl"
             />
           </div>
+
+          <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+            <div>
+              <p className="text-sm font-medium">App sounds</p>
+              <p className="text-[0.65rem] text-muted-foreground">Soft taps, chimes &amp; sparkles across the app.</p>
+            </div>
+            <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
+          </label>
 
           <div>
             <label className="text-xs font-medium text-muted-foreground">Home quotes (one per line)</label>
