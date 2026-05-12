@@ -14,6 +14,7 @@ export interface TravelerPlan {
   startDate: number;
   endDate?: number;
   location?: string;
+  enjoyment?: number; // 1..5
   mediaKind?: "image";
   mediaMime?: string;
   createdAt: number;
@@ -59,6 +60,7 @@ export async function createPlan(
     startDate: data.startDate,
     endDate: data.endDate,
     location: data.location,
+    enjoyment: (data as { enjoyment?: number }).enjoyment,
     createdAt: Date.now(),
   };
   if (data.file) {
