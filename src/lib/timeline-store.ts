@@ -9,6 +9,7 @@ export interface TimelineEntry {
   content: string;
   location?: string;
   enjoyment?: number; // 1..5
+  iconKey?: string;   // lucide:<Name> | emoji:<char> | custom:<id>
   mediaKind?: "image" | "video";
   mediaMime?: string;
   createdAt: number;
@@ -46,7 +47,7 @@ async function readAll() {
 
 export async function createEntry(
   userId: string,
-  data: { date: number; endDate?: number; title: string; content: string; location?: string; enjoyment?: number; file?: File | null },
+  data: { date: number; endDate?: number; title: string; content: string; location?: string; enjoyment?: number; iconKey?: string; file?: File | null },
 ): Promise<TimelineEntry> {
   const all = await readAll();
   const entry: TimelineEntry = {
@@ -58,6 +59,7 @@ export async function createEntry(
     content: data.content,
     location: data.location,
     enjoyment: data.enjoyment,
+    iconKey: data.iconKey,
     createdAt: Date.now(),
   };
   if (data.file) {
@@ -71,7 +73,7 @@ export async function createEntry(
 
 export async function updateEntry(
   id: string,
-  data: { date: number; endDate?: number; title: string; content: string; location?: string; enjoyment?: number; file?: File | null; removeMedia?: boolean },
+  data: { date: number; endDate?: number; title: string; content: string; location?: string; enjoyment?: number; iconKey?: string; file?: File | null; removeMedia?: boolean },
 ) {
   const all = await readAll();
   const next = await Promise.all(
@@ -85,6 +87,7 @@ export async function updateEntry(
         content: data.content,
         location: data.location,
         enjoyment: data.enjoyment,
+        iconKey: data.iconKey,
       };
       if (data.removeMedia) {
         await blobStore.removeItem(id);

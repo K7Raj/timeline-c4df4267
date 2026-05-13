@@ -15,6 +15,7 @@ export interface TravelerPlan {
   endDate?: number;
   location?: string;
   enjoyment?: number; // 1..5
+  iconKey?: string;   // lucide:<Name> | emoji:<char> | custom:<id>
   mediaKind?: "image";
   mediaMime?: string;
   createdAt: number;

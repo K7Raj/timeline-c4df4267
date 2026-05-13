@@ -29,6 +29,7 @@ export const TRACKED_KEYS = [
   "app-settings-v2",
   "app-settings-v1", // legacy migration
   "notices-v1",
+  "custom-library-v1", // admin-managed emojis + uploaded icons (global)
   "theme",
   "media-view-prefs", // grid/list + size for Rhythm > Photos
 ];
