@@ -926,6 +926,8 @@ const EntryDialog = ({
           location: location.trim() || undefined,
           enjoyment,
           iconKey,
+          file,
+          removeMedia,
         });
         toast({ title: "Moment updated" });
       } else {
@@ -936,6 +938,7 @@ const EntryDialog = ({
           endDate: ets,
           location: location.trim() || undefined,
           enjoyment,
+          iconKey,
           file,
         });
         toast({ title: "Moment added ✨" });
