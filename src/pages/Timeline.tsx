@@ -617,7 +617,7 @@ const CandyMap = ({
       </svg>
 
       {entries.map((e, i) => {
-        const Icon = pickIcon(e.title);
+        const FallbackIcon = pickIcon(e.title);
         const isExpanded = expandedId === e.id;
         const isSelected = selected.has(e.id);
         const showYear = i === 0 || fmtYear(entries[i - 1].date) !== fmtYear(e.date);
@@ -629,6 +629,9 @@ const CandyMap = ({
         const gap = NODE / 2 + 14;
         const slot = Math.max(120, (width - gap * 2) / 2 - 4);
         const cardLeft = isLeft ? Math.max(4, pos.x - gap - slot) : pos.x + gap;
+
+        // Card emoji shown inline (only when explicitly chosen as an emoji).
+        const cardEmoji = e.iconKey?.startsWith("emoji:") ? e.iconKey.slice(6) : null;
 
         return (
           <div key={e.id} data-entry-id={e.id}>
@@ -652,16 +655,23 @@ const CandyMap = ({
               style={{
                 left: cardLeft,
                 width: slot,
-                top: pos.y - 26,
+                top: pos.y - 30,
               }}
             >
               <div className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-wider text-primary">
                 <CalendarIcon className="w-2.5 h-2.5 shrink-0" />
                 <span className="whitespace-nowrap">{fmtRange(e.date, e.endDate)}</span>
               </div>
-              <p className="mt-0.5 text-[0.78rem] sm:text-xs font-semibold text-foreground leading-snug break-words line-clamp-2">
-                {e.title}
+              <p className="mt-0.5 text-[0.78rem] sm:text-xs font-semibold text-foreground leading-snug break-words line-clamp-2 flex items-start gap-1">
+                {cardEmoji && <span className="text-sm leading-none shrink-0">{cardEmoji}</span>}
+                <span className="min-w-0">{e.title}</span>
               </p>
+              {e.location && (
+                <div className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground truncate">
+                  <MapPin className="w-2.5 h-2.5 shrink-0 text-primary" />
+                  <span className="truncate">{e.location}</span>
+                </div>
+              )}
               {selectMode && (
                 <span
                   className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[9px] font-bold ${
@@ -690,7 +700,13 @@ const CandyMap = ({
               aria-label={`${e.title} on ${fmtLong(e.date)}`}
             >
               <span className="absolute inset-0 -m-1 rounded-full bg-gradient-primary opacity-40 blur-md" />
-              <Icon className="relative w-4 h-4 text-primary-foreground drop-shadow" />
+              {e.iconKey ? (
+                <span className="relative text-primary-foreground drop-shadow flex items-center justify-center">
+                  <ResolvedIcon iconKey={e.iconKey} className="w-5 h-5" />
+                </span>
+              ) : (
+                <FallbackIcon className="relative w-4 h-4 text-primary-foreground drop-shadow" />
+              )}
             </button>
 
             {isExpanded && (
