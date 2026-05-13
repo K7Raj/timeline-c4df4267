@@ -978,6 +978,19 @@ const EntryDialog = ({
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A memorable moment" className="mt-1 rounded-xl" />
           </div>
           <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-muted-foreground">Icon</label>
+              {iconKey && (
+                <button type="button" data-no-sound onClick={() => setIconKey(undefined)} className="text-[0.65rem] text-muted-foreground hover:text-destructive">
+                  clear
+                </button>
+              )}
+            </div>
+            <div className="mt-1 rounded-xl border border-border bg-secondary/30 p-2 max-h-48 overflow-y-auto">
+              <IconPicker value={iconKey} onChange={setIconKey} />
+            </div>
+          </div>
+          <div>
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
               <MapPin className="w-3 h-3" /> Location (optional)
             </label>
