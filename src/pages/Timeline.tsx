@@ -69,6 +69,7 @@ import { getCurrentUser, getUser } from "@/lib/auth-store";
 import { getMemoryMapPerms } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
 import { SmileRating, SmileBadge } from "@/components/SmileRating";
+import { IconPicker, ResolvedIcon, LUCIDE_MAP } from "@/components/IconPicker";
 
 type RangeKey = "all" | "30d" | "6m" | "year" | "custom";
 
@@ -101,6 +102,7 @@ const fmtRange = (start: number, end?: number) => {
   return `${fmtShort(start)} – ${fmtShort(end)}`;
 };
 
+// Fallback icon (used only when entry has no explicit iconKey).
 const pickIcon = (title: string) => {
   const t = title.toLowerCase();
   if (/(wedding|reception|engagement|mehendi|anniversary)/.test(t)) return Heart;
