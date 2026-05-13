@@ -37,8 +37,11 @@ import { ShareDialog } from "@/components/ShareDialog";
 import { getCurrentUser, logout } from "@/lib/auth-store";
 import {
   useSettings,
+  saveUserSettings,
+  getUserSettings,
   type TabKey,
 } from "@/lib/settings-store";
+import { setSoundEnabled } from "@/lib/sound";
 import {
   clearNotices,
   markAllRead,
