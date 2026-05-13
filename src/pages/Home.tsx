@@ -409,25 +409,36 @@ const UserSettingsDialog = ({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-primary" /> Change passcode
+            <Settings className="w-4 h-4 text-primary" /> Settings
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Update your sign-in passcode. Other settings are managed by your admin.
+            Update your sign-in passcode and personal preferences.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Current passcode</label>
-            <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} className="mt-1 rounded-xl" />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2">
+            <div>
+              <div className="text-sm font-medium">App sounds</div>
+              <div className="text-xs text-muted-foreground">Taps, chimes & sparkles</div>
+            </div>
+            <Switch checked={sound} onCheckedChange={toggleSound} />
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">New passcode</label>
-            <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} className="mt-1 rounded-xl" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Confirm new passcode</label>
-            <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="mt-1 rounded-xl" />
+
+          <div className="space-y-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Change passcode</div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Current passcode</label>
+              <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} className="mt-1 rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">New passcode</label>
+              <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} className="mt-1 rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Confirm new passcode</label>
+              <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="mt-1 rounded-xl" />
+            </div>
           </div>
         </div>
 
