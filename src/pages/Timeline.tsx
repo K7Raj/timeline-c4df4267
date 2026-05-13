@@ -852,6 +852,7 @@ const EntryDialog = ({
   const [endDate, setEndDate] = useState("");
   const [location, setLocation] = useState("");
   const [enjoyment, setEnjoyment] = useState<number | undefined>(undefined);
+  const [iconKey, setIconKey] = useState<string | undefined>(undefined);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [removeMedia, setRemoveMedia] = useState(false);
@@ -867,6 +868,7 @@ const EntryDialog = ({
       setEndDate(entry.endDate ? new Date(entry.endDate).toISOString().slice(0, 10) : "");
       setLocation(entry.location ?? "");
       setEnjoyment(entry.enjoyment);
+      setIconKey(entry.iconKey);
       (async () => {
         if (entry.mediaKind) {
           const url = await getEntryBlobUrl(entry.id);
@@ -882,6 +884,7 @@ const EntryDialog = ({
       setEndDate("");
       setLocation("");
       setEnjoyment(undefined);
+      setIconKey(undefined);
       setExistingPreview(null);
     }
     setFile(null);
@@ -922,8 +925,7 @@ const EntryDialog = ({
           endDate: ets,
           location: location.trim() || undefined,
           enjoyment,
-          file,
-          removeMedia,
+          iconKey,
         });
         toast({ title: "Moment updated" });
       } else {
