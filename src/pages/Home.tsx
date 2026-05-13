@@ -132,7 +132,10 @@ const Home = () => {
             </SheetContent>
           </Sheet>
 
-          <h1 className="text-lg font-bold text-gradient flex-1">My Vault</h1>
+          <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center mr-1">
+            <Clock3 className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <h1 className="text-lg font-bold text-gradient flex-1">Timeline</h1>
 
           <Button
             variant="ghost"
@@ -283,7 +286,7 @@ const Drawer = ({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center px-5 h-14 border-b border-border">
-        <span className="font-bold text-gradient">My Vault</span>
+        <span className="font-bold text-gradient">Timeline</span>
       </div>
 
       <div className="px-5 py-5 border-b border-border flex items-center gap-3">

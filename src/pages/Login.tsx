@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Lock, Cake, Eye, EyeOff, ArrowRight, ArrowLeft,
+  Lock, Clock3, Eye, EyeOff, ArrowRight, ArrowLeft,
   User as UserIcon, ShieldCheck, Upload, Sparkles, KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,11 +64,11 @@ const Login = () => {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-3xl bg-gradient-primary shadow-glow flex items-center justify-center mb-5 animate-pulse">
-            <Cake className="w-10 h-10 text-primary-foreground" />
+            <Clock3 className="w-10 h-10 text-primary-foreground" />
           </div>
           {step === "username" ? (
             <>
-              <h1 className="text-3xl font-bold text-gradient">My Vault</h1>
+              <h1 className="text-3xl font-bold text-gradient">Timeline</h1>
               <p className="text-sm text-muted-foreground mt-2 text-center italic">
                 Who's unlocking the magic today? ✨
               </p>
