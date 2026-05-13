@@ -62,6 +62,7 @@ export async function createPlan(
     endDate: data.endDate,
     location: data.location,
     enjoyment: (data as { enjoyment?: number }).enjoyment,
+    iconKey: (data as { iconKey?: string }).iconKey,
     createdAt: Date.now(),
   };
   if (data.file) {
