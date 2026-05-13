@@ -69,7 +69,7 @@ import { getCurrentUser, getUser } from "@/lib/auth-store";
 import { getMemoryMapPerms } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
 import { SmileRating, SmileBadge } from "@/components/SmileRating";
-import { IconPicker, ResolvedIcon, LUCIDE_MAP } from "@/components/IconPicker";
+import { IconPicker, ResolvedIcon } from "@/components/IconPicker";
 
 type RangeKey = "all" | "30d" | "6m" | "year" | "custom";
 
