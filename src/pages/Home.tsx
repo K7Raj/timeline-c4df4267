@@ -83,6 +83,11 @@ const Home = () => {
     else if (user.role === "admin") navigate("/admin", { replace: true });
   }, [user, navigate]);
 
+  // Apply this user's sound preference to the engine on login.
+  useEffect(() => {
+    if (user) setSoundEnabled(getUserSettings(user.id).soundEnabled);
+  }, [user]);
+
   const handleLogout = () => {
     logout();
     navigate("/");
