@@ -362,14 +362,22 @@ const UserSettingsDialog = ({
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [sound, setSound] = useState(true);
 
   useEffect(() => {
     if (open) {
       setCurrent("");
       setNext("");
       setConfirm("");
+      setSound(getUserSettings(userId).soundEnabled);
     }
-  }, [open]);
+  }, [open, userId]);
+
+  const toggleSound = (v: boolean) => {
+    setSound(v);
+    saveUserSettings(userId, { soundEnabled: v });
+    setSoundEnabled(v);
+  };
 
   const save = async () => {
     const { getUser, updateUser } = await import("@/lib/auth-store");
