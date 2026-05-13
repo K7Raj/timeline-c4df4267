@@ -69,6 +69,7 @@ import { getCurrentUser, getUser } from "@/lib/auth-store";
 import { getMemoryMapPerms } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
 import { SmileRating, SmileBadge } from "@/components/SmileRating";
+import { IconPicker, ResolvedIcon } from "@/components/IconPicker";
 
 type RangeKey = "all" | "30d" | "6m" | "year" | "custom";
 
@@ -101,6 +102,7 @@ const fmtRange = (start: number, end?: number) => {
   return `${fmtShort(start)} – ${fmtShort(end)}`;
 };
 
+// Fallback icon (used only when entry has no explicit iconKey).
 const pickIcon = (title: string) => {
   const t = title.toLowerCase();
   if (/(wedding|reception|engagement|mehendi|anniversary)/.test(t)) return Heart;
@@ -615,7 +617,7 @@ const CandyMap = ({
       </svg>
 
       {entries.map((e, i) => {
-        const Icon = pickIcon(e.title);
+        const FallbackIcon = pickIcon(e.title);
         const isExpanded = expandedId === e.id;
         const isSelected = selected.has(e.id);
         const showYear = i === 0 || fmtYear(entries[i - 1].date) !== fmtYear(e.date);
@@ -627,6 +629,9 @@ const CandyMap = ({
         const gap = NODE / 2 + 14;
         const slot = Math.max(120, (width - gap * 2) / 2 - 4);
         const cardLeft = isLeft ? Math.max(4, pos.x - gap - slot) : pos.x + gap;
+
+        // Card emoji shown inline (only when explicitly chosen as an emoji).
+        const cardEmoji = e.iconKey?.startsWith("emoji:") ? e.iconKey.slice(6) : null;
 
         return (
           <div key={e.id} data-entry-id={e.id}>
@@ -650,16 +655,23 @@ const CandyMap = ({
               style={{
                 left: cardLeft,
                 width: slot,
-                top: pos.y - 26,
+                top: pos.y - 30,
               }}
             >
               <div className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-wider text-primary">
                 <CalendarIcon className="w-2.5 h-2.5 shrink-0" />
                 <span className="whitespace-nowrap">{fmtRange(e.date, e.endDate)}</span>
               </div>
-              <p className="mt-0.5 text-[0.78rem] sm:text-xs font-semibold text-foreground leading-snug break-words line-clamp-2">
-                {e.title}
+              <p className="mt-0.5 text-[0.78rem] sm:text-xs font-semibold text-foreground leading-snug break-words line-clamp-2 flex items-start gap-1">
+                {cardEmoji && <span className="text-sm leading-none shrink-0">{cardEmoji}</span>}
+                <span className="min-w-0">{e.title}</span>
               </p>
+              {e.location && (
+                <div className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground truncate">
+                  <MapPin className="w-2.5 h-2.5 shrink-0 text-primary" />
+                  <span className="truncate">{e.location}</span>
+                </div>
+              )}
               {selectMode && (
                 <span
                   className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[9px] font-bold ${
@@ -688,7 +700,13 @@ const CandyMap = ({
               aria-label={`${e.title} on ${fmtLong(e.date)}`}
             >
               <span className="absolute inset-0 -m-1 rounded-full bg-gradient-primary opacity-40 blur-md" />
-              <Icon className="relative w-4 h-4 text-primary-foreground drop-shadow" />
+              {e.iconKey ? (
+                <span className="relative text-primary-foreground drop-shadow flex items-center justify-center">
+                  <ResolvedIcon iconKey={e.iconKey} className="w-5 h-5" />
+                </span>
+              ) : (
+                <FallbackIcon className="relative w-4 h-4 text-primary-foreground drop-shadow" />
+              )}
             </button>
 
             {isExpanded && (
@@ -834,6 +852,7 @@ const EntryDialog = ({
   const [endDate, setEndDate] = useState("");
   const [location, setLocation] = useState("");
   const [enjoyment, setEnjoyment] = useState<number | undefined>(undefined);
+  const [iconKey, setIconKey] = useState<string | undefined>(undefined);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [removeMedia, setRemoveMedia] = useState(false);
@@ -849,6 +868,7 @@ const EntryDialog = ({
       setEndDate(entry.endDate ? new Date(entry.endDate).toISOString().slice(0, 10) : "");
       setLocation(entry.location ?? "");
       setEnjoyment(entry.enjoyment);
+      setIconKey(entry.iconKey);
       (async () => {
         if (entry.mediaKind) {
           const url = await getEntryBlobUrl(entry.id);
@@ -864,6 +884,7 @@ const EntryDialog = ({
       setEndDate("");
       setLocation("");
       setEnjoyment(undefined);
+      setIconKey(undefined);
       setExistingPreview(null);
     }
     setFile(null);
@@ -904,6 +925,7 @@ const EntryDialog = ({
           endDate: ets,
           location: location.trim() || undefined,
           enjoyment,
+          iconKey,
           file,
           removeMedia,
         });
@@ -916,6 +938,7 @@ const EntryDialog = ({
           endDate: ets,
           location: location.trim() || undefined,
           enjoyment,
+          iconKey,
           file,
         });
         toast({ title: "Moment added ✨" });
@@ -953,6 +976,19 @@ const EntryDialog = ({
           <div>
             <label className="text-xs font-medium text-muted-foreground">Title</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A memorable moment" className="mt-1 rounded-xl" />
+          </div>
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-muted-foreground">Icon</label>
+              {iconKey && (
+                <button type="button" data-no-sound onClick={() => setIconKey(undefined)} className="text-[0.65rem] text-muted-foreground hover:text-destructive">
+                  clear
+                </button>
+              )}
+            </div>
+            <div className="mt-1 rounded-xl border border-border bg-secondary/30 p-2 max-h-48 overflow-y-auto">
+              <IconPicker value={iconKey} onChange={setIconKey} />
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
