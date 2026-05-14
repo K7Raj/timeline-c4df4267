@@ -23,6 +23,7 @@ import {
   type PlanKind, type TravelerPlan,
 } from "@/lib/traveler-store";
 import { SmileRating, SmileBadge } from "@/components/SmileRating";
+import { IconPicker, ResolvedIcon } from "@/components/IconPicker";
 
 const KIND_META: Record<PlanKind, { label: string; Icon: typeof Plane; color: string }> = {
   trip:     { label: "Trip",     Icon: Plane,        color: "from-sky-500 to-indigo-500" },
@@ -119,6 +120,7 @@ const TimeTraveler = () => {
         title: data.title, notes: data.notes, kind: data.kind,
         startDate: data.startDate, endDate: data.endDate, location: data.location,
         enjoyment: data.enjoyment,
+        iconKey: data.iconKey,
         file: data.file,
       } as Parameters<typeof createPlan>[1]);
       toast({ title: "Plan added ✨" });
@@ -320,7 +322,10 @@ const PlanCard = ({
             </span>
           )}
         </div>
-        <h3 className="font-semibold text-sm leading-snug line-clamp-2">{plan.title}</h3>
+        <h3 className="font-semibold text-sm leading-snug line-clamp-2 flex items-center gap-1.5">
+          {plan.iconKey && <ResolvedIcon iconKey={plan.iconKey} className="w-4 h-4 shrink-0 text-primary" />}
+          <span className="truncate">{plan.title}</span>
+        </h3>
         <div className="mt-1 text-[0.7rem] text-muted-foreground flex items-center gap-1">
           <CalendarIcon className="w-3 h-3" />
           {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
@@ -380,6 +385,7 @@ const PlanRow = ({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
+          {plan.iconKey && <ResolvedIcon iconKey={plan.iconKey} className="w-3.5 h-3.5 text-primary shrink-0" />}
           <p className="font-semibold text-sm truncate">{plan.title}</p>
           <span className="px-1.5 py-0 rounded-full text-[0.55rem] font-bold uppercase bg-primary/15 text-primary">
             {meta.label}
@@ -420,6 +426,7 @@ interface PlanForm {
   endDate?: number;
   location?: string;
   enjoyment?: number;
+  iconKey?: string;
   file?: File | null;
   removeMedia?: boolean;
 }
