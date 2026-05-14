@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, ArrowRightCircle, Smile,
+  Compass, ArrowRightCircle, Smile, MapPin, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
@@ -230,8 +230,21 @@ const Stats = () => {
       const v = (it as { enjoyment?: number }).enjoyment;
       if (v && v >= 1 && v <= 5) { dist[v - 1]++; total++; sum += v; }
     });
-    return { dist, total, avg: total ? sum / total : 0 };
+    let topIdx = -1, topCount = 0;
+    dist.forEach((c, i) => { if (c > topCount) { topCount = c; topIdx = i; } });
+    return { dist, total, avg: total ? sum / total : 0, topIdx, topCount };
   }, [entries, plans]);
+
+  // All distinct locations across memories + plans
+  const locations = useMemo(() => {
+    const map = new Map<string, number>();
+    [...entries, ...plans].forEach((it) => {
+      const loc = (it as { location?: string }).location?.trim();
+      if (loc) map.set(loc, (map.get(loc) ?? 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [entries, plans]);
+  const [locOpen, setLocOpen] = useState(false);
 
   const ago = (ts: number) => {
     const diff = Date.now() - ts;
