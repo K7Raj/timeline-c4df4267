@@ -450,6 +450,7 @@ const PlanDialog = ({
   const [preview, setPreview] = useState<string | null>(null);
   const [existing, setExisting] = useState<string | null>(null);
   const [remove, setRemove] = useState(false);
+  const [iconKey, setIconKey] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!open) return;
@@ -461,6 +462,7 @@ const PlanDialog = ({
       setEnd(editing.endDate ? new Date(editing.endDate).toISOString().slice(0, 10) : "");
       setLocation(editing.location ?? "");
       setEnjoyment(editing.enjoyment);
+      setIconKey(editing.iconKey);
       setRemove(false);
       (async () => {
         if (editing.mediaKind) setExisting(await getPlanImageUrl(editing.id));
@@ -469,7 +471,7 @@ const PlanDialog = ({
     } else {
       setTitle(""); setNotes(""); setKind("trip");
       setStart(new Date().toISOString().slice(0, 10));
-      setEnd(""); setLocation(""); setEnjoyment(undefined); setExisting(null); setRemove(false);
+      setEnd(""); setLocation(""); setEnjoyment(undefined); setIconKey(undefined); setExisting(null); setRemove(false);
     }
     setFile(null); setPreview(null);
   }, [open, editing]);
@@ -496,6 +498,7 @@ const PlanDialog = ({
       endDate: end ? new Date(end).getTime() : undefined,
       location: location.trim() || undefined,
       enjoyment,
+      iconKey,
       file,
       removeMedia: remove,
     });
