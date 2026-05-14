@@ -568,6 +568,17 @@ const PlanDialog = ({
             </div>
           </div>
           <div>
+            <label className="text-xs font-medium text-muted-foreground">Icon / emotion</label>
+            <div className="mt-1 p-2 rounded-xl border border-border bg-secondary/30">
+              <IconPicker value={iconKey} onChange={setIconKey} />
+              {iconKey && (
+                <button type="button" data-no-sound onClick={() => setIconKey(undefined)} className="mt-1 text-[0.65rem] text-muted-foreground hover:text-destructive">
+                  clear icon
+                </button>
+              )}
+            </div>
+          </div>
+          <div>
             <label className="text-xs font-medium text-muted-foreground">Notes</label>
             <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 rounded-xl resize-none" placeholder="Things to pack, ideas, reminders…" />
           </div>
