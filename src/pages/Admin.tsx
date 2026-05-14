@@ -66,6 +66,7 @@ import {
 } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
 import { setSoundEnabled } from "@/lib/sound";
+import { LibraryManager } from "@/components/LibraryManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -635,6 +636,14 @@ const SettingsDialog = ({
               }
               className="mt-1 rounded-xl resize-none font-mono text-xs"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Custom library (global)</label>
+            <p className="text-[0.65rem] text-muted-foreground mt-0.5 mb-2">
+              Add emotions and icons available in Memory Map &amp; Time Traveler.
+            </p>
+            <LibraryManager />
           </div>
 
           <div>
