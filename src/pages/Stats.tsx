@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, ArrowRightCircle, Smile,
+  Compass, ArrowRightCircle, Smile, MapPin, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
@@ -230,8 +230,21 @@ const Stats = () => {
       const v = (it as { enjoyment?: number }).enjoyment;
       if (v && v >= 1 && v <= 5) { dist[v - 1]++; total++; sum += v; }
     });
-    return { dist, total, avg: total ? sum / total : 0 };
+    let topIdx = -1, topCount = 0;
+    dist.forEach((c, i) => { if (c > topCount) { topCount = c; topIdx = i; } });
+    return { dist, total, avg: total ? sum / total : 0, topIdx, topCount };
   }, [entries, plans]);
+
+  // All distinct locations across memories + plans
+  const locations = useMemo(() => {
+    const map = new Map<string, number>();
+    [...entries, ...plans].forEach((it) => {
+      const loc = (it as { location?: string }).location?.trim();
+      if (loc) map.set(loc, (map.get(loc) ?? 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [entries, plans]);
+  const [locOpen, setLocOpen] = useState(false);
 
   const ago = (ts: number) => {
     const diff = Date.now() - ts;
@@ -287,6 +300,12 @@ const Stats = () => {
               <StatCard icon={Flame} label="Day streak" value={streak} />
               <StatCard icon={Hourglass} label="Longest gap" value={longestGap} suffix="d" />
               <StatCard icon={Trophy} label="Top month" value={summary.peakMonth[1]} sub={peakMonthLabel} />
+              <StatCard
+                icon={Smile}
+                label="Top emotion"
+                value={emotions.topIdx >= 0 ? FACES[emotions.topIdx] : "—"}
+                sub={emotions.topIdx >= 0 ? `${FACE_LABELS[emotions.topIdx]} · ${emotions.topCount}` : "rate to track"}
+              />
             </div>
 
             {/* First / Last with random media */}
@@ -399,6 +418,46 @@ const Stats = () => {
                     })}
                   </div>
                 </>
+              )}
+            </div>
+
+            {/* Locations */}
+            <div className="mt-5 bg-gradient-card border border-border rounded-2xl shadow-elegant overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setLocOpen((v) => !v)}
+                className="w-full flex items-center gap-2 p-4 text-left"
+              >
+                <MapPin className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-bold flex-1">My locations</h2>
+                <span className="text-[0.7rem] text-muted-foreground">{locations.length}</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${locOpen ? "rotate-180" : ""}`} />
+              </button>
+              {locOpen && (
+                <div className="px-4 pb-4">
+                  {locations.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Add a location to memories or plans to see them here.
+                    </p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {locations.map(([loc, n]) => (
+                        <li key={loc}>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-background border border-border text-xs hover:border-primary/50 transition"
+                          >
+                            <MapPin className="w-3 h-3 text-primary" />
+                            <span>{loc}</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[0.6rem] font-bold">{n}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
             </div>
 

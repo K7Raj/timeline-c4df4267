@@ -23,6 +23,7 @@ import {
   type PlanKind, type TravelerPlan,
 } from "@/lib/traveler-store";
 import { SmileRating, SmileBadge } from "@/components/SmileRating";
+import { IconPicker, ResolvedIcon } from "@/components/IconPicker";
 
 const KIND_META: Record<PlanKind, { label: string; Icon: typeof Plane; color: string }> = {
   trip:     { label: "Trip",     Icon: Plane,        color: "from-sky-500 to-indigo-500" },
@@ -119,6 +120,7 @@ const TimeTraveler = () => {
         title: data.title, notes: data.notes, kind: data.kind,
         startDate: data.startDate, endDate: data.endDate, location: data.location,
         enjoyment: data.enjoyment,
+        iconKey: data.iconKey,
         file: data.file,
       } as Parameters<typeof createPlan>[1]);
       toast({ title: "Plan added ✨" });
@@ -320,7 +322,10 @@ const PlanCard = ({
             </span>
           )}
         </div>
-        <h3 className="font-semibold text-sm leading-snug line-clamp-2">{plan.title}</h3>
+        <h3 className="font-semibold text-sm leading-snug line-clamp-2 flex items-center gap-1.5">
+          {plan.iconKey && <ResolvedIcon iconKey={plan.iconKey} className="w-4 h-4 shrink-0 text-primary" />}
+          <span className="truncate">{plan.title}</span>
+        </h3>
         <div className="mt-1 text-[0.7rem] text-muted-foreground flex items-center gap-1">
           <CalendarIcon className="w-3 h-3" />
           {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
@@ -380,6 +385,7 @@ const PlanRow = ({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
+          {plan.iconKey && <ResolvedIcon iconKey={plan.iconKey} className="w-3.5 h-3.5 text-primary shrink-0" />}
           <p className="font-semibold text-sm truncate">{plan.title}</p>
           <span className="px-1.5 py-0 rounded-full text-[0.55rem] font-bold uppercase bg-primary/15 text-primary">
             {meta.label}
@@ -420,6 +426,7 @@ interface PlanForm {
   endDate?: number;
   location?: string;
   enjoyment?: number;
+  iconKey?: string;
   file?: File | null;
   removeMedia?: boolean;
 }
@@ -443,6 +450,7 @@ const PlanDialog = ({
   const [preview, setPreview] = useState<string | null>(null);
   const [existing, setExisting] = useState<string | null>(null);
   const [remove, setRemove] = useState(false);
+  const [iconKey, setIconKey] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!open) return;
@@ -454,6 +462,7 @@ const PlanDialog = ({
       setEnd(editing.endDate ? new Date(editing.endDate).toISOString().slice(0, 10) : "");
       setLocation(editing.location ?? "");
       setEnjoyment(editing.enjoyment);
+      setIconKey(editing.iconKey);
       setRemove(false);
       (async () => {
         if (editing.mediaKind) setExisting(await getPlanImageUrl(editing.id));
@@ -462,7 +471,7 @@ const PlanDialog = ({
     } else {
       setTitle(""); setNotes(""); setKind("trip");
       setStart(new Date().toISOString().slice(0, 10));
-      setEnd(""); setLocation(""); setEnjoyment(undefined); setExisting(null); setRemove(false);
+      setEnd(""); setLocation(""); setEnjoyment(undefined); setIconKey(undefined); setExisting(null); setRemove(false);
     }
     setFile(null); setPreview(null);
   }, [open, editing]);
@@ -489,6 +498,7 @@ const PlanDialog = ({
       endDate: end ? new Date(end).getTime() : undefined,
       location: location.trim() || undefined,
       enjoyment,
+      iconKey,
       file,
       removeMedia: remove,
     });
@@ -555,6 +565,17 @@ const PlanDialog = ({
                   clear
                 </button>
               ) : null}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Icon / emotion</label>
+            <div className="mt-1 p-2 rounded-xl border border-border bg-secondary/30">
+              <IconPicker value={iconKey} onChange={setIconKey} />
+              {iconKey && (
+                <button type="button" data-no-sound onClick={() => setIconKey(undefined)} className="mt-1 text-[0.65rem] text-muted-foreground hover:text-destructive">
+                  clear icon
+                </button>
+              )}
             </div>
           </div>
           <div>
