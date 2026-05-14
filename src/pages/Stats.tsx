@@ -421,6 +421,46 @@ const Stats = () => {
               )}
             </div>
 
+            {/* Locations */}
+            <div className="mt-5 bg-gradient-card border border-border rounded-2xl shadow-elegant overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setLocOpen((v) => !v)}
+                className="w-full flex items-center gap-2 p-4 text-left"
+              >
+                <MapPin className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-bold flex-1">My locations</h2>
+                <span className="text-[0.7rem] text-muted-foreground">{locations.length}</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${locOpen ? "rotate-180" : ""}`} />
+              </button>
+              {locOpen && (
+                <div className="px-4 pb-4">
+                  {locations.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Add a location to memories or plans to see them here.
+                    </p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {locations.map(([loc, n]) => (
+                        <li key={loc}>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-background border border-border text-xs hover:border-primary/50 transition"
+                          >
+                            <MapPin className="w-3 h-3 text-primary" />
+                            <span>{loc}</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[0.6rem] font-bold">{n}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* On THIS exact date (day + month) */}
             <div className="mt-5 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
               <h2 className="text-sm font-bold flex items-center gap-2 mb-1">
