@@ -300,6 +300,12 @@ const Stats = () => {
               <StatCard icon={Flame} label="Day streak" value={streak} />
               <StatCard icon={Hourglass} label="Longest gap" value={longestGap} suffix="d" />
               <StatCard icon={Trophy} label="Top month" value={summary.peakMonth[1]} sub={peakMonthLabel} />
+              <StatCard
+                icon={Smile}
+                label="Top emotion"
+                value={emotions.topIdx >= 0 ? FACES[emotions.topIdx] : "—"}
+                sub={emotions.topIdx >= 0 ? `${FACE_LABELS[emotions.topIdx]} · ${emotions.topCount}` : "rate to track"}
+              />
             </div>
 
             {/* First / Last with random media */}
