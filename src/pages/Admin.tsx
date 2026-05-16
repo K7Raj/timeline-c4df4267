@@ -67,6 +67,10 @@ import {
 import { pushNotice } from "@/lib/notifications-store";
 import { setSoundEnabled } from "@/lib/sound";
 import { LibraryManager } from "@/components/LibraryManager";
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -591,64 +595,54 @@ const SettingsDialog = ({
             <Sparkles className="w-4 h-4 text-primary" /> Global defaults
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Default welcome heading, quotes, tabs and surprise wishes for new users.
-            Per-user overrides take precedence.
+            Tap a card to edit. Per-user overrides take precedence.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Welcome heading</label>
+        <div className="space-y-2">
+          <SettingCard icon={Type} title="Welcome heading" sub="Greeting shown on the user's home screen.">
             <Input
               value={s.welcomeHeading}
               onChange={(e) => setS({ ...s, welcomeHeading: e.target.value })}
-              className="mt-1 rounded-xl"
+              className="rounded-xl"
             />
-          </div>
+          </SettingCard>
 
-          <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
-            <div>
-              <p className="text-sm font-medium">App sounds</p>
-              <p className="text-[0.65rem] text-muted-foreground">Soft taps, chimes &amp; sparkles across the app.</p>
-            </div>
-            <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
-          </label>
+          <SettingCard icon={Volume2} title="App sounds" sub="Soft taps, chimes & sparkles across the app." defaultOpen>
+            <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+              <span className="text-sm">Enable sounds globally</span>
+              <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
+            </label>
+          </SettingCard>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Home quotes (one per line)</label>
+          <SettingCard icon={Quote} title="Home quotes" sub="One per line.">
             <Textarea
               rows={5}
               value={s.quotes.join("\n")}
               onChange={(e) =>
                 setS({ ...s, quotes: e.target.value.split("\n").map((l) => l.trimEnd()) })
               }
-              className="mt-1 rounded-xl resize-none font-mono text-xs"
+              className="rounded-xl resize-none font-mono text-xs"
             />
-          </div>
+          </SettingCard>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Surprise wishes (one per line, use {"{name}"})</label>
+          <SettingCard icon={Wand2} title="Surprise wishes" sub={`One per line, use {name}.`}>
             <Textarea
               rows={4}
               value={s.surpriseWishes.join("\n")}
               onChange={(e) =>
                 setS({ ...s, surpriseWishes: e.target.value.split("\n").map((l) => l.trimEnd()) })
               }
-              className="mt-1 rounded-xl resize-none font-mono text-xs"
+              className="rounded-xl resize-none font-mono text-xs"
             />
-          </div>
+          </SettingCard>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Custom library (global)</label>
-            <p className="text-[0.65rem] text-muted-foreground mt-0.5 mb-2">
-              Add emotions and icons available in Memory Map &amp; Time Traveler.
-            </p>
+          <SettingCard icon={Library} title="Custom library" sub="Emotions & icons used across the app.">
             <LibraryManager />
-          </div>
+          </SettingCard>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Enabled tabs</label>
-            <div className="mt-2 space-y-2">
+          <SettingCard icon={LayoutGrid} title="Enabled tabs" sub="Default tabs shown to new users.">
+            <div className="space-y-2">
               {(Object.keys(tabLabels) as TabKey[]).map((k) => (
                 <label
                   key={k}
@@ -664,7 +658,7 @@ const SettingsDialog = ({
                 </label>
               ))}
             </div>
-          </div>
+          </SettingCard>
         </div>
 
         <DialogFooter>
@@ -673,6 +667,39 @@ const SettingsDialog = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+};
+
+const SettingCard = ({
+  icon: Icon, title, sub, children, defaultOpen,
+}: {
+  icon: typeof Sparkles;
+  title: string;
+  sub?: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) => {
+  const [open, setOpen] = useState(!!defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="rounded-xl border border-border bg-secondary/20 overflow-hidden">
+        <CollapsibleTrigger asChild>
+          <button type="button" className="w-full flex items-center gap-3 p-3 text-left hover:bg-secondary/40 transition">
+            <div className="w-9 h-9 rounded-lg bg-gradient-primary/15 flex items-center justify-center shrink-0">
+              <Icon className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold truncate">{title}</p>
+              {sub && <p className="text-[0.65rem] text-muted-foreground truncate">{sub}</p>}
+            </div>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="p-3 pt-1 border-t border-border/60">{children}</div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 };
 
