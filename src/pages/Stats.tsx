@@ -698,14 +698,14 @@ const EntryRow = ({
 };
 
 const StatCard = ({
-  icon: Icon, label, value, suffix, sub,
-}: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string }) => (
+  icon: Icon, label, value, suffix, sub, emoji,
+}: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string; emoji?: boolean }) => (
   <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant">
     <div className="flex items-center gap-2 text-muted-foreground">
       <Icon className="w-4 h-4 text-primary" />
       <span className="text-[0.65rem] uppercase tracking-wider font-semibold truncate">{label}</span>
     </div>
-    <p className="mt-1 text-2xl font-bold text-gradient">
+    <p className={`mt-1 text-2xl font-bold ${emoji ? "text-foreground leading-none" : "text-gradient"}`}>
       {value}
       {suffix && <span className="text-base ml-1 text-muted-foreground">{suffix}</span>}
     </p>
