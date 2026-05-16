@@ -513,3 +513,139 @@ const UserSettingsDialog = ({
 };
 
 export default Home;
+
+// Insta-like profile sheet: edit display name, avatar emoji and bio.
+const ProfileDialog = ({
+  open,
+  onOpenChange,
+  userId,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  userId: string;
+}) => {
+  const [profileName, setProfileName] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarEmoji, setAvatarEmoji] = useState("");
+  const [edit, setEdit] = useState(false);
+  const u = getAuthUser(userId);
+
+  useEffect(() => {
+    if (open) {
+      const fresh = getAuthUser(userId);
+      setProfileName(fresh?.profileName ?? "");
+      setBio(fresh?.bio ?? "");
+      setAvatarEmoji(fresh?.avatarEmoji ?? "");
+      setEdit(false);
+    }
+  }, [open, userId]);
+
+  if (!u) return null;
+
+  const initial = (u.profileName || u.username || "U").charAt(0).toUpperCase();
+  const joined = new Date(u.createdAt).toLocaleDateString(undefined, {
+    day: "2-digit", month: "long", year: "numeric",
+  });
+
+  const save = () => {
+    if (!profileName.trim()) {
+      toast({ title: "Profile name can't be empty", variant: "destructive" });
+      return;
+    }
+    try {
+      updateAuthUser(userId, {
+        profileName: profileName.trim(),
+        bio: bio.trim() || undefined,
+        avatarEmoji: avatarEmoji.trim() || undefined,
+      });
+      toast({ title: "Profile updated ✨" });
+      setEdit(false);
+    } catch (e) {
+      toast({ title: "Update failed", description: String((e as Error).message), variant: "destructive" });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserIcon className="w-4 h-4 text-primary" /> My profile
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {edit ? "Update how you appear in Timeline." : "Your account at a glance."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col items-center text-center gap-2 pt-2">
+          <div className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-glow">
+            {avatarEmoji ? <span className="leading-none">{avatarEmoji}</span> : initial}
+          </div>
+          {!edit && (
+            <>
+              <p className="font-semibold text-base mt-1">{u.profileName}</p>
+              <p className="text-xs text-muted-foreground">@{u.username} · {u.role}</p>
+              {u.bio && <p className="text-xs mt-2 px-2 text-foreground/90 whitespace-pre-wrap">{u.bio}</p>}
+              <p className="text-[0.65rem] text-muted-foreground mt-2 flex items-center gap-1">
+                <CalendarDays className="w-3 h-3" /> Joined {joined}
+              </p>
+            </>
+          )}
+        </div>
+
+        {edit && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Avatar emoji (optional)</label>
+              <Input
+                value={avatarEmoji}
+                onChange={(e) => setAvatarEmoji(e.target.value)}
+                placeholder="🌷"
+                maxLength={4}
+                className="mt-1 rounded-xl text-center text-lg"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Profile name</label>
+              <Input
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                className="mt-1 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Bio</label>
+              <Textarea
+                rows={3}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="A line about you ✨"
+                maxLength={140}
+                className="mt-1 rounded-xl resize-none"
+              />
+            </div>
+            <p className="text-[0.65rem] text-muted-foreground">
+              Username, role and passcode are managed in Settings or by the admin.
+            </p>
+          </div>
+        )}
+
+        <DialogFooter>
+          {edit ? (
+            <>
+              <Button variant="ghost" onClick={() => setEdit(false)}>Cancel</Button>
+              <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>Save</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
+              <Button className="bg-gradient-primary text-primary-foreground" onClick={() => setEdit(true)}>
+                Edit profile
+              </Button>
+            </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
