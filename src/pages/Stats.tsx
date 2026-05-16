@@ -14,6 +14,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 
 interface Bucket { key: string; label: string; count: number }
 
@@ -257,6 +260,7 @@ const Stats = () => {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [entries, plans]);
   const [locOpen, setLocOpen] = useState(false);
+  const [detail, setDetail] = useState<{ title: string; icon: typeof Sparkles; body: React.ReactNode } | null>(null);
 
   const ago = (ts: number) => {
     const diff = Date.now() - ts;
@@ -303,21 +307,92 @@ const Stats = () => {
           <>
             {/* Top stat tiles */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <StatCard icon={Sparkles} label="Total memories" value={summary.total} />
-              <StatCard icon={CalendarDays} label="Days covered" value={summary.span} suffix="d" />
-              <StatCard icon={Clock3} label="Unique days" value={summary.days} />
-              <StatCard icon={ImageIcon} label="Photos" value={summary.images} />
-              <StatCard icon={Video} label="Videos" value={summary.videos} />
-              <StatCard icon={CalendarDays} label="Multi-day" value={summary.multiDay} />
-              <StatCard icon={Flame} label="Day streak" value={streak} />
-              <StatCard icon={Hourglass} label="Longest gap" value={longestGap} suffix="d" />
-              <StatCard icon={Trophy} label="Top month" value={summary.peakMonth[1]} sub={peakMonthLabel} />
+              <StatCard icon={Sparkles} label="Total memories" value={summary.total}
+                onClick={() => setDetail({ title: "Total memories", icon: Sparkles, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p><b>{summary.total}</b> memories saved so far.</p>
+                    <p className="text-muted-foreground">First: {fmt(summary.first.date)} — “{summary.first.title}”</p>
+                    <p className="text-muted-foreground">Latest: {fmt(summary.last.date)} — “{summary.last.title}”</p>
+                  </div>
+                )})} />
+              <StatCard icon={CalendarDays} label="Days covered" value={summary.span} suffix="d"
+                onClick={() => setDetail({ title: "Days covered", icon: CalendarDays, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p><b>{summary.span}</b> days from your first to latest memory.</p>
+                    <p className="text-muted-foreground">{fmt(summary.first.date)} → {fmt(summary.last.date)}</p>
+                  </div>
+                )})} />
+              <StatCard icon={Clock3} label="Unique days" value={summary.days}
+                onClick={() => setDetail({ title: "Unique days", icon: Clock3, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p>You've logged memories on <b>{summary.days}</b> different days.</p>
+                    <p className="text-muted-foreground">That's {Math.round((summary.days / summary.span) * 100)}% of your timeline span.</p>
+                  </div>
+                )})} />
+              <StatCard icon={ImageIcon} label="Photos" value={summary.images}
+                onClick={() => setDetail({ title: "Photos", icon: ImageIcon, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p><b>{summary.images}</b> memories include a photo.</p>
+                    <p className="text-muted-foreground">{summary.total ? Math.round((summary.images / summary.total) * 100) : 0}% of your timeline has imagery.</p>
+                  </div>
+                )})} />
+              <StatCard icon={Video} label="Videos" value={summary.videos}
+                onClick={() => setDetail({ title: "Videos", icon: Video, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p><b>{summary.videos}</b> memories include a video.</p>
+                    <p className="text-muted-foreground">{summary.total ? Math.round((summary.videos / summary.total) * 100) : 0}% of your timeline.</p>
+                  </div>
+                )})} />
+              <StatCard icon={CalendarDays} label="Multi-day" value={summary.multiDay}
+                onClick={() => setDetail({ title: "Multi-day memories", icon: CalendarDays, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p><b>{summary.multiDay}</b> memories span more than one day.</p>
+                    <p className="text-muted-foreground">Trips, events and stretches you wanted to remember in full.</p>
+                  </div>
+                )})} />
+              <StatCard icon={Flame} label="Day streak" value={streak}
+                onClick={() => setDetail({ title: "Day streak", icon: Flame, body: (
+                  <div className="space-y-1.5 text-sm">
+                    {streak > 0 ? (
+                      <p>You've added memories <b>{streak}</b> day{streak === 1 ? "" : "s"} in a row, including today 🔥</p>
+                    ) : (
+                      <p>No active streak. Add a memory today to start one ✨</p>
+                    )}
+                  </div>
+                )})} />
+              <StatCard icon={Hourglass} label="Longest gap" value={longestGap} suffix="d"
+                onClick={() => setDetail({ title: "Longest gap", icon: Hourglass, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p>The biggest pause between two memories was <b>{longestGap}</b> day{longestGap === 1 ? "" : "s"}.</p>
+                    <p className="text-muted-foreground">Every quiet stretch is part of the story too.</p>
+                  </div>
+                )})} />
+              <StatCard icon={Trophy} label="Top month" value={summary.peakMonth[1]} sub={peakMonthLabel}
+                onClick={() => setDetail({ title: "Top month", icon: Trophy, body: (
+                  <div className="space-y-1.5 text-sm">
+                    <p><b>{peakMonthLabel}</b> was your busiest month.</p>
+                    <p className="text-muted-foreground">{summary.peakMonth[1]} memories logged that month.</p>
+                  </div>
+                )})} />
               <StatCard
                 icon={Smile}
                 label="Top emotion"
                 value={emotions.topIdx >= 0 ? FACES[emotions.topIdx] : "—"}
                 sub={emotions.topIdx >= 0 ? `${FACE_LABELS[emotions.topIdx]} · ${emotions.topCount}` : "rate to track"}
                 emoji={emotions.topIdx >= 0}
+                onClick={() => setDetail({ title: "Top emotion", icon: Smile, body: (
+                  <div className="space-y-1.5 text-sm">
+                    {emotions.topIdx >= 0 ? (
+                      <>
+                        <p className="text-3xl">{FACES[emotions.topIdx]}</p>
+                        <p><b>{FACE_LABELS[emotions.topIdx]}</b> appears most often — <b>{emotions.topCount}</b> time{emotions.topCount === 1 ? "" : "s"}.</p>
+                        <p className="text-muted-foreground">Across {emotions.total} rated memories &amp; plans.</p>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">Rate memories with a smile to track your top emotion.</p>
+                    )}
+                  </div>
+                )})}
               />
               {emotions.total > 0 && (
                 <StatCard
@@ -326,6 +401,13 @@ const Stats = () => {
                   value={emotions.avg.toFixed(1)}
                   suffix="/5"
                   sub={`${emotions.total} rated`}
+                  onClick={() => setDetail({ title: "Average mood", icon: Heart, body: (
+                    <div className="space-y-1.5 text-sm">
+                      <p className="text-3xl">{FACES[Math.round(emotions.avg) - 1] ?? "🙂"}</p>
+                      <p>Average mood across {emotions.total} ratings: <b>{emotions.avg.toFixed(2)} / 5</b>.</p>
+                      <p className="text-muted-foreground">Closest feeling: {FACE_LABELS[Math.round(emotions.avg) - 1] ?? "Good"}.</p>
+                    </div>
+                  )})}
                 />
               )}
               {busiestDay && (
@@ -334,6 +416,12 @@ const Stats = () => {
                   label="Busiest day"
                   value={busiestDay.label}
                   sub={`${busiestDay.count} memories`}
+                  onClick={() => setDetail({ title: "Busiest day of the week", icon: CalendarCheck, body: (
+                    <div className="space-y-1.5 text-sm">
+                      <p><b>{busiestDay.label}</b> is when you log the most memories.</p>
+                      <p className="text-muted-foreground">{busiestDay.count} memories fall on a {busiestDay.label}.</p>
+                    </div>
+                  )})}
                 />
               )}
             </div>
@@ -662,6 +750,25 @@ const Stats = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-sm">
+          {detail && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                    <detail.icon className="w-4 h-4 text-primary-foreground" />
+                  </span>
+                  {detail.title}
+                </DialogTitle>
+                <DialogDescription className="sr-only">{detail.title} details</DialogDescription>
+              </DialogHeader>
+              <div className="pt-1">{detail.body}</div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };
@@ -699,9 +806,13 @@ const EntryRow = ({
 };
 
 const StatCard = ({
-  icon: Icon, label, value, suffix, sub, emoji,
-}: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string; emoji?: boolean }) => (
-  <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant">
+  icon: Icon, label, value, suffix, sub, emoji, onClick,
+}: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string; emoji?: boolean; onClick?: () => void }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="text-left bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant transition hover:border-primary/40 hover:shadow-lg active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+  >
     <div className="flex items-center gap-2 text-muted-foreground">
       <Icon className="w-4 h-4 text-primary" />
       <span className="text-[0.65rem] uppercase tracking-wider font-semibold truncate">{label}</span>
@@ -711,7 +822,7 @@ const StatCard = ({
       {suffix && <span className="text-base ml-1 text-muted-foreground">{suffix}</span>}
     </p>
     {sub && <p className="text-[0.65rem] text-muted-foreground truncate">{sub}</p>}
-  </div>
+  </button>
 );
 
 const MediaInfoCard = ({
