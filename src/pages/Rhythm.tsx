@@ -50,7 +50,8 @@ const Rhythm = () => {
       return;
     }
     refresh();
-  }, [user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, navigate]);
 
   const refresh = async () => {
     if (!user) return;

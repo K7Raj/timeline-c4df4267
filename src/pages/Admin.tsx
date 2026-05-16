@@ -93,7 +93,8 @@ const Admin = () => {
   useEffect(() => {
     if (!me) navigate("/", { replace: true });
     else if (me.role !== "admin") navigate("/home", { replace: true });
-  }, [me, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.id, me?.role, navigate]);
 
   const refresh = () => setUsers(listUsers());
   useEffect(() => {

@@ -86,7 +86,8 @@ const Media = () => {
   useEffect(() => {
     if (!user) navigate("/", { replace: true });
     else if (!settings.enabledTabs.media) navigate("/home", { replace: true });
-  }, [user, navigate, settings.enabledTabs.media]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, navigate, settings.enabledTabs.media]);
 
   useEffect(() => {
     refresh();

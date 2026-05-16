@@ -32,7 +32,8 @@ const Stats = () => {
     if (!user) { navigate("/", { replace: true }); return; }
     getEntries(user.id).then(setEntries);
     listPlans(user.id).then(setPlans);
-  }, [user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, navigate]);
 
   const todayMid = useMemo(() => {
     const t = new Date(); t.setHours(0, 0, 0, 0); return t.getTime();

@@ -162,7 +162,8 @@ const Timeline = () => {
 
   useEffect(() => {
     if (!current) navigate("/", { replace: true });
-  }, [current, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, navigate]);
 
   // Apply ?focus=ID after entries load: expand it and scroll into view.
   useEffect(() => {

@@ -66,7 +66,8 @@ const TimeTraveler = () => {
 
   useEffect(() => {
     if (!user) navigate("/", { replace: true });
-  }, [user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, navigate]);
 
   const refresh = async () => {
     if (!user) return;
