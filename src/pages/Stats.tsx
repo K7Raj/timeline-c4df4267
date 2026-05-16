@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, ArrowRightCircle, Smile, MapPin, ChevronDown,
+  Compass, ArrowRightCircle, Smile, MapPin, ChevronDown, CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
@@ -235,6 +235,17 @@ const Stats = () => {
     return { dist, total, avg: total ? sum / total : 0, topIdx, topCount };
   }, [entries, plans]);
 
+  // Busiest weekday across all memories
+  const busiestDay = useMemo(() => {
+    if (!summary) return null as null | { label: string; count: number };
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    summary.sorted.forEach((e) => { counts[new Date(e.date).getDay()]++; });
+    let bestIdx = 0;
+    counts.forEach((c, i) => { if (c > counts[bestIdx]) bestIdx = i; });
+    return counts[bestIdx] > 0 ? { label: dayNames[bestIdx], count: counts[bestIdx] } : null;
+  }, [summary]);
+
   // All distinct locations across memories + plans
   const locations = useMemo(() => {
     const map = new Map<string, number>();
@@ -305,7 +316,25 @@ const Stats = () => {
                 label="Top emotion"
                 value={emotions.topIdx >= 0 ? FACES[emotions.topIdx] : "—"}
                 sub={emotions.topIdx >= 0 ? `${FACE_LABELS[emotions.topIdx]} · ${emotions.topCount}` : "rate to track"}
+                emoji={emotions.topIdx >= 0}
               />
+              {emotions.total > 0 && (
+                <StatCard
+                  icon={Heart}
+                  label="Avg mood"
+                  value={emotions.avg.toFixed(1)}
+                  suffix="/5"
+                  sub={`${emotions.total} rated`}
+                />
+              )}
+              {busiestDay && (
+                <StatCard
+                  icon={CalendarCheck}
+                  label="Busiest day"
+                  value={busiestDay.label}
+                  sub={`${busiestDay.count} memories`}
+                />
+              )}
             </div>
 
             {/* First / Last with random media */}
