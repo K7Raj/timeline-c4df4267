@@ -61,7 +61,8 @@ const Wish = () => {
       setWishes(list);
       if (list.length >= 3) setPhase("done");
     })();
-  }, [user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, navigate]);
 
   useEffect(() => () => {
     if (flashTimer.current) window.clearTimeout(flashTimer.current);
