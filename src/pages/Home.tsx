@@ -293,32 +293,51 @@ const Drawer = ({
   onClose,
   onLogout,
   onOpenSettings,
+  onOpenProfile,
+  onOpenShare,
   tabs,
 }: {
   onClose: () => void;
   onLogout: () => void;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
+  onOpenShare: () => void;
   tabs: Tab[];
 }) => {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const user = getCurrentUser();
   const initial = (user?.profileName || user?.username || "U").charAt(0).toUpperCase();
+  const joined = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+    : null;
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center px-5 h-14 border-b border-border">
         <span className="font-bold text-gradient">Timeline</span>
       </div>
 
-      <div className="px-5 py-5 border-b border-border flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold">
-          {initial}
+      <button
+        type="button"
+        onClick={onOpenProfile}
+        className="px-5 py-4 border-b border-border flex items-center gap-3 hover:bg-secondary/40 transition text-left"
+      >
+        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
+          {user?.avatarEmoji ? <span className="text-2xl leading-none">{user.avatarEmoji}</span> : initial}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-semibold truncate">{user?.profileName ?? "User"}</p>
           <p className="text-xs text-muted-foreground truncate">@{user?.username ?? ""}</p>
+          {user?.bio ? (
+            <p className="text-[0.7rem] text-muted-foreground/90 truncate mt-0.5">{user.bio}</p>
+          ) : joined ? (
+            <p className="text-[0.65rem] text-muted-foreground/80 truncate mt-0.5 flex items-center gap-1">
+              <CalendarDays className="w-3 h-3" /> Joined {joined}
+            </p>
+          ) : null}
         </div>
-      </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      </button>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {tabs.map((opt) => (
@@ -357,6 +376,22 @@ const Drawer = ({
         >
           <Settings className="w-5 h-5 text-muted-foreground" />
           <span className="text-sm font-medium">Settings</span>
+        </button>
+
+        <button
+          onClick={onOpenProfile}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
+        >
+          <UserIcon className="w-5 h-5 text-muted-foreground" />
+          <span className="text-sm font-medium">Edit profile</span>
+        </button>
+
+        <button
+          onClick={onOpenShare}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
+        >
+          <Share2 className="w-5 h-5 text-muted-foreground" />
+          <span className="text-sm font-medium">Share vault</span>
         </button>
       </nav>
 
