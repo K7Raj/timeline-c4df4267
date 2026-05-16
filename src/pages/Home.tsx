@@ -17,11 +17,14 @@ import {
   BarChart3,
   Music2,
   Compass,
+  User as UserIcon,
+  CalendarDays,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 import {
   Dialog,
@@ -35,6 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTheme } from "@/hooks/use-theme";
 import { ShareDialog } from "@/components/ShareDialog";
 import { getCurrentUser, logout } from "@/lib/auth-store";
+import { getUser as getAuthUser, updateUser as updateAuthUser } from "@/lib/auth-store";
 import {
   useSettings,
   saveUserSettings,
@@ -73,6 +77,7 @@ const Home = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const user = getCurrentUser();
   const settings = useSettings(user?.id);
   const notices = useNotices(user?.id);
@@ -81,12 +86,13 @@ const Home = () => {
   useEffect(() => {
     if (!user) navigate("/", { replace: true });
     else if (user.role === "admin") navigate("/admin", { replace: true });
-  }, [user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.role, navigate]);
 
   // Apply this user's sound preference to the engine on login.
   useEffect(() => {
-    if (user) setSoundEnabled(getUserSettings(user.id).soundEnabled);
-  }, [user]);
+    if (user?.id) setSoundEnabled(getUserSettings(user.id).soundEnabled);
+  }, [user?.id]);
 
   const handleLogout = () => {
     logout();
