@@ -213,7 +213,7 @@ const BootstrapPanel = ({ onDone }: { onDone: () => void }) => {
           <div className="w-20 h-20 rounded-3xl bg-gradient-primary shadow-glow flex items-center justify-center mb-4">
             <Sparkles className="w-10 h-10 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-gradient">Welcome to My Vault</h1>
+          <h1 className="text-2xl font-bold text-gradient">Welcome to Timeline</h1>
           <p className="text-sm text-muted-foreground mt-2 text-center">
             Nothing is stored yet on this device. Get started below.
           </p>
