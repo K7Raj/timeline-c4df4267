@@ -17,11 +17,14 @@ import {
   BarChart3,
   Music2,
   Compass,
+  User as UserIcon,
+  CalendarDays,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 import {
   Dialog,
@@ -35,6 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useTheme } from "@/hooks/use-theme";
 import { ShareDialog } from "@/components/ShareDialog";
 import { getCurrentUser, logout } from "@/lib/auth-store";
+import { getUser as getAuthUser, updateUser as updateAuthUser } from "@/lib/auth-store";
 import {
   useSettings,
   saveUserSettings,
@@ -73,6 +77,7 @@ const Home = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const user = getCurrentUser();
   const settings = useSettings(user?.id);
   const notices = useNotices(user?.id);
@@ -81,12 +86,13 @@ const Home = () => {
   useEffect(() => {
     if (!user) navigate("/", { replace: true });
     else if (user.role === "admin") navigate("/admin", { replace: true });
-  }, [user, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.role, navigate]);
 
   // Apply this user's sound preference to the engine on login.
   useEffect(() => {
-    if (user) setSoundEnabled(getUserSettings(user.id).soundEnabled);
-  }, [user]);
+    if (user?.id) setSoundEnabled(getUserSettings(user.id).soundEnabled);
+  }, [user?.id]);
 
   const handleLogout = () => {
     logout();
@@ -126,6 +132,14 @@ const Home = () => {
                 onOpenSettings={() => {
                   setOpen(false);
                   setSettingsOpen(true);
+                }}
+                onOpenProfile={() => {
+                  setOpen(false);
+                  setProfileOpen(true);
+                }}
+                onOpenShare={() => {
+                  setOpen(false);
+                  setShareOpen(true);
                 }}
                 tabs={enabled}
               />
@@ -215,6 +229,13 @@ const Home = () => {
           userId={user.id}
         />
       )}
+      {user && (
+        <ProfileDialog
+          open={profileOpen}
+          onOpenChange={setProfileOpen}
+          userId={user.id}
+        />
+      )}
 
       {/* Body */}
       <section className="px-4 sm:px-5 pt-5 pb-10 max-w-2xl mx-auto">
@@ -272,32 +293,51 @@ const Drawer = ({
   onClose,
   onLogout,
   onOpenSettings,
+  onOpenProfile,
+  onOpenShare,
   tabs,
 }: {
   onClose: () => void;
   onLogout: () => void;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
+  onOpenShare: () => void;
   tabs: Tab[];
 }) => {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const user = getCurrentUser();
   const initial = (user?.profileName || user?.username || "U").charAt(0).toUpperCase();
+  const joined = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+    : null;
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center px-5 h-14 border-b border-border">
         <span className="font-bold text-gradient">Timeline</span>
       </div>
 
-      <div className="px-5 py-5 border-b border-border flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold">
-          {initial}
+      <button
+        type="button"
+        onClick={onOpenProfile}
+        className="px-5 py-4 border-b border-border flex items-center gap-3 hover:bg-secondary/40 transition text-left"
+      >
+        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
+          {user?.avatarEmoji ? <span className="text-2xl leading-none">{user.avatarEmoji}</span> : initial}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-semibold truncate">{user?.profileName ?? "User"}</p>
           <p className="text-xs text-muted-foreground truncate">@{user?.username ?? ""}</p>
+          {user?.bio ? (
+            <p className="text-[0.7rem] text-muted-foreground/90 truncate mt-0.5">{user.bio}</p>
+          ) : joined ? (
+            <p className="text-[0.65rem] text-muted-foreground/80 truncate mt-0.5 flex items-center gap-1">
+              <CalendarDays className="w-3 h-3" /> Joined {joined}
+            </p>
+          ) : null}
         </div>
-      </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      </button>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {tabs.map((opt) => (
@@ -336,6 +376,22 @@ const Drawer = ({
         >
           <Settings className="w-5 h-5 text-muted-foreground" />
           <span className="text-sm font-medium">Settings</span>
+        </button>
+
+        <button
+          onClick={onOpenProfile}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
+        >
+          <UserIcon className="w-5 h-5 text-muted-foreground" />
+          <span className="text-sm font-medium">Edit profile</span>
+        </button>
+
+        <button
+          onClick={onOpenShare}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
+        >
+          <Share2 className="w-5 h-5 text-muted-foreground" />
+          <span className="text-sm font-medium">Share vault</span>
         </button>
       </nav>
 
@@ -457,3 +513,139 @@ const UserSettingsDialog = ({
 };
 
 export default Home;
+
+// Insta-like profile sheet: edit display name, avatar emoji and bio.
+const ProfileDialog = ({
+  open,
+  onOpenChange,
+  userId,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  userId: string;
+}) => {
+  const [profileName, setProfileName] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarEmoji, setAvatarEmoji] = useState("");
+  const [edit, setEdit] = useState(false);
+  const u = getAuthUser(userId);
+
+  useEffect(() => {
+    if (open) {
+      const fresh = getAuthUser(userId);
+      setProfileName(fresh?.profileName ?? "");
+      setBio(fresh?.bio ?? "");
+      setAvatarEmoji(fresh?.avatarEmoji ?? "");
+      setEdit(false);
+    }
+  }, [open, userId]);
+
+  if (!u) return null;
+
+  const initial = (u.profileName || u.username || "U").charAt(0).toUpperCase();
+  const joined = new Date(u.createdAt).toLocaleDateString(undefined, {
+    day: "2-digit", month: "long", year: "numeric",
+  });
+
+  const save = () => {
+    if (!profileName.trim()) {
+      toast({ title: "Profile name can't be empty", variant: "destructive" });
+      return;
+    }
+    try {
+      updateAuthUser(userId, {
+        profileName: profileName.trim(),
+        bio: bio.trim() || undefined,
+        avatarEmoji: avatarEmoji.trim() || undefined,
+      });
+      toast({ title: "Profile updated ✨" });
+      setEdit(false);
+    } catch (e) {
+      toast({ title: "Update failed", description: String((e as Error).message), variant: "destructive" });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserIcon className="w-4 h-4 text-primary" /> My profile
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {edit ? "Update how you appear in Timeline." : "Your account at a glance."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col items-center text-center gap-2 pt-2">
+          <div className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-glow">
+            {avatarEmoji ? <span className="leading-none">{avatarEmoji}</span> : initial}
+          </div>
+          {!edit && (
+            <>
+              <p className="font-semibold text-base mt-1">{u.profileName}</p>
+              <p className="text-xs text-muted-foreground">@{u.username} · {u.role}</p>
+              {u.bio && <p className="text-xs mt-2 px-2 text-foreground/90 whitespace-pre-wrap">{u.bio}</p>}
+              <p className="text-[0.65rem] text-muted-foreground mt-2 flex items-center gap-1">
+                <CalendarDays className="w-3 h-3" /> Joined {joined}
+              </p>
+            </>
+          )}
+        </div>
+
+        {edit && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Avatar emoji (optional)</label>
+              <Input
+                value={avatarEmoji}
+                onChange={(e) => setAvatarEmoji(e.target.value)}
+                placeholder="🌷"
+                maxLength={4}
+                className="mt-1 rounded-xl text-center text-lg"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Profile name</label>
+              <Input
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                className="mt-1 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Bio</label>
+              <Textarea
+                rows={3}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="A line about you ✨"
+                maxLength={140}
+                className="mt-1 rounded-xl resize-none"
+              />
+            </div>
+            <p className="text-[0.65rem] text-muted-foreground">
+              Username, role and passcode are managed in Settings or by the admin.
+            </p>
+          </div>
+        )}
+
+        <DialogFooter>
+          {edit ? (
+            <>
+              <Button variant="ghost" onClick={() => setEdit(false)}>Cancel</Button>
+              <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>Save</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
+              <Button className="bg-gradient-primary text-primary-foreground" onClick={() => setEdit(true)}>
+                Edit profile
+              </Button>
+            </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

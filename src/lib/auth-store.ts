@@ -10,6 +10,8 @@ export interface User {
   passcode: string;
   role: Role;
   createdAt: number;
+  bio?: string;
+  avatarEmoji?: string;
 }
 
 const USERS_KEY = "vault-users";
@@ -72,7 +74,7 @@ export function createUser(data: {
 
 export function updateUser(
   id: string,
-  patch: Partial<Pick<User, "username" | "profileName" | "passcode" | "role">>,
+  patch: Partial<Pick<User, "username" | "profileName" | "passcode" | "role" | "bio" | "avatarEmoji">>,
 ) {
   const users = listUsers();
   const next = users.map((u) => (u.id === id ? { ...u, ...patch } : u));

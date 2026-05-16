@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, ArrowRightCircle, Smile, MapPin, ChevronDown,
+  Compass, ArrowRightCircle, Smile, MapPin, ChevronDown, CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
@@ -235,6 +235,17 @@ const Stats = () => {
     return { dist, total, avg: total ? sum / total : 0, topIdx, topCount };
   }, [entries, plans]);
 
+  // Busiest weekday across all memories
+  const busiestDay = useMemo(() => {
+    if (!summary) return null as null | { label: string; count: number };
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    summary.sorted.forEach((e) => { counts[new Date(e.date).getDay()]++; });
+    let bestIdx = 0;
+    counts.forEach((c, i) => { if (c > counts[bestIdx]) bestIdx = i; });
+    return counts[bestIdx] > 0 ? { label: dayNames[bestIdx], count: counts[bestIdx] } : null;
+  }, [summary]);
+
   // All distinct locations across memories + plans
   const locations = useMemo(() => {
     const map = new Map<string, number>();
@@ -305,7 +316,25 @@ const Stats = () => {
                 label="Top emotion"
                 value={emotions.topIdx >= 0 ? FACES[emotions.topIdx] : "—"}
                 sub={emotions.topIdx >= 0 ? `${FACE_LABELS[emotions.topIdx]} · ${emotions.topCount}` : "rate to track"}
+                emoji={emotions.topIdx >= 0}
               />
+              {emotions.total > 0 && (
+                <StatCard
+                  icon={Heart}
+                  label="Avg mood"
+                  value={emotions.avg.toFixed(1)}
+                  suffix="/5"
+                  sub={`${emotions.total} rated`}
+                />
+              )}
+              {busiestDay && (
+                <StatCard
+                  icon={CalendarCheck}
+                  label="Busiest day"
+                  value={busiestDay.label}
+                  sub={`${busiestDay.count} memories`}
+                />
+              )}
             </div>
 
             {/* First / Last with random media */}
@@ -669,14 +698,14 @@ const EntryRow = ({
 };
 
 const StatCard = ({
-  icon: Icon, label, value, suffix, sub,
-}: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string }) => (
+  icon: Icon, label, value, suffix, sub, emoji,
+}: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string; emoji?: boolean }) => (
   <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant">
     <div className="flex items-center gap-2 text-muted-foreground">
       <Icon className="w-4 h-4 text-primary" />
       <span className="text-[0.65rem] uppercase tracking-wider font-semibold truncate">{label}</span>
     </div>
-    <p className="mt-1 text-2xl font-bold text-gradient">
+    <p className={`mt-1 text-2xl font-bold ${emoji ? "text-foreground leading-none" : "text-gradient"}`}>
       {value}
       {suffix && <span className="text-base ml-1 text-muted-foreground">{suffix}</span>}
     </p>
