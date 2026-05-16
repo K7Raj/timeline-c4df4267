@@ -17,6 +17,11 @@ export interface User {
 const USERS_KEY = "vault-users";
 const SESSION_KEY = "vault-session"; // stores user id
 
+let cachedUsersRaw: string | null = null;
+let cachedUsers: User[] = [];
+let cachedSessionId: string | null = null;
+let cachedCurrentUser: User | null = null;
+
 const uid = () =>
   `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -27,14 +32,22 @@ export function listUsers(): User[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as User[];
+    if (raw === cachedUsersRaw) return cachedUsers;
+    cachedUsersRaw = raw;
+    cachedUsers = JSON.parse(raw) as User[];
+    cachedCurrentUser = null;
+    return cachedUsers;
   } catch {
     return [];
   }
 }
 
 function save(users: User[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  const raw = JSON.stringify(users);
+  cachedUsersRaw = raw;
+  cachedUsers = users;
+  cachedCurrentUser = null;
+  localStorage.setItem(USERS_KEY, raw);
 }
 
 export function getUser(id: string): User | null {
@@ -127,7 +140,13 @@ export function logout() {
 export function getCurrentUser(): User | null {
   const id = sessionStorage.getItem(SESSION_KEY);
   if (!id) return null;
-  return getUser(id);
+  const raw = localStorage.getItem(USERS_KEY);
+  if (id === cachedSessionId && raw === cachedUsersRaw && cachedCurrentUser) {
+    return cachedCurrentUser;
+  }
+  cachedSessionId = id;
+  cachedCurrentUser = getUser(id);
+  return cachedCurrentUser;
 }
 
 export function requireUser(): User {
