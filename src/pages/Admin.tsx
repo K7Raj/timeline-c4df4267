@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Shield,
@@ -676,7 +676,7 @@ const SettingCard = ({
   icon: typeof Sparkles;
   title: string;
   sub?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   defaultOpen?: boolean;
 }) => {
   const [open, setOpen] = useState(!!defaultOpen);
