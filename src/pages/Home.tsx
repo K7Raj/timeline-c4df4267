@@ -221,6 +221,13 @@ const Home = () => {
           userId={user.id}
         />
       )}
+      {user && (
+        <ProfileDialog
+          open={profileOpen}
+          onOpenChange={setProfileOpen}
+          userId={user.id}
+        />
+      )}
 
       {/* Body */}
       <section className="px-4 sm:px-5 pt-5 pb-10 max-w-2xl mx-auto">
