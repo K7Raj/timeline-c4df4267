@@ -133,6 +133,14 @@ const Home = () => {
                   setOpen(false);
                   setSettingsOpen(true);
                 }}
+                onOpenProfile={() => {
+                  setOpen(false);
+                  setProfileOpen(true);
+                }}
+                onOpenShare={() => {
+                  setOpen(false);
+                  setShareOpen(true);
+                }}
                 tabs={enabled}
               />
             </SheetContent>
