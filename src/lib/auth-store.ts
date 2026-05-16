@@ -31,7 +31,12 @@ const uid = () =>
 export function listUsers(): User[] {
   try {
     const raw = localStorage.getItem(USERS_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      cachedUsersRaw = null;
+      cachedUsers = [];
+      cachedCurrentUser = null;
+      return [];
+    }
     if (raw === cachedUsersRaw) return cachedUsers;
     cachedUsersRaw = raw;
     cachedUsers = JSON.parse(raw) as User[];
