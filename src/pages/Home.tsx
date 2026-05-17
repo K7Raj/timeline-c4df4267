@@ -19,12 +19,16 @@ import {
   Compass,
   User as UserIcon,
   CalendarDays,
+  ChevronDown,
+  Volume2,
+  KeyRound,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import {
   Dialog,
@@ -78,6 +82,7 @@ const Home = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [passcodeOpen, setPasscodeOpen] = useState(false);
   const user = getCurrentUser();
   const settings = useSettings(user?.id);
   const notices = useNotices(user?.id);
@@ -129,19 +134,20 @@ const Home = () => {
               <Drawer
                 onClose={() => setOpen(false)}
                 onLogout={handleLogout}
-                onOpenSettings={() => {
-                  setOpen(false);
-                  setSettingsOpen(true);
-                }}
                 onOpenProfile={() => {
                   setOpen(false);
                   setProfileOpen(true);
+                }}
+                onOpenPasscode={() => {
+                  setOpen(false);
+                  setPasscodeOpen(true);
                 }}
                 onOpenShare={() => {
                   setOpen(false);
                   setShareOpen(true);
                 }}
                 tabs={enabled}
+                userId={user?.id}
               />
             </SheetContent>
           </Sheet>
@@ -223,12 +229,14 @@ const Home = () => {
 
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
       {user && (
-        <UserSettingsDialog
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
+        <PasscodeDialog
+          open={passcodeOpen}
+          onOpenChange={setPasscodeOpen}
           userId={user.id}
         />
       )}
+      {/* legacy settingsOpen kept for back-compat but unused */}
+      {settingsOpen && setTimeout(() => setSettingsOpen(false), 0) && null}
       {user && (
         <ProfileDialog
           open={profileOpen}
@@ -292,17 +300,19 @@ const Home = () => {
 const Drawer = ({
   onClose,
   onLogout,
-  onOpenSettings,
   onOpenProfile,
+  onOpenPasscode,
   onOpenShare,
   tabs,
+  userId,
 }: {
   onClose: () => void;
   onLogout: () => void;
-  onOpenSettings: () => void;
   onOpenProfile: () => void;
+  onOpenPasscode: () => void;
   onOpenShare: () => void;
   tabs: Tab[];
+  userId?: string;
 }) => {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
@@ -311,6 +321,15 @@ const Drawer = ({
   const joined = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })
     : null;
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [sound, setSound] = useState(() => (userId ? getUserSettings(userId).soundEnabled : true));
+  const toggleSound = (v: boolean) => {
+    setSound(v);
+    if (userId) {
+      saveUserSettings(userId, { soundEnabled: v });
+      setSoundEnabled(v);
+    }
+  };
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center px-5 h-14 border-b border-border">
@@ -370,21 +389,43 @@ const Drawer = ({
           <Switch checked={theme === "light"} onCheckedChange={toggle} />
         </div>
 
-        <button
-          onClick={onOpenSettings}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
-        >
-          <Settings className="w-5 h-5 text-muted-foreground" />
-          <span className="text-sm font-medium">Settings</span>
-        </button>
-
-        <button
-          onClick={onOpenProfile}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
-        >
-          <UserIcon className="w-5 h-5 text-muted-foreground" />
-          <span className="text-sm font-medium">Edit profile</span>
-        </button>
+        <Collapsible open={settingsExpanded} onOpenChange={setSettingsExpanded}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
+            >
+              <Settings className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-medium flex-1">Settings</span>
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground transition-transform ${settingsExpanded ? "rotate-180" : ""}`}
+              />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pl-2">
+            <div className="flex items-center justify-between px-3 py-2.5 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Volume2 className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Sound</span>
+              </div>
+              <Switch checked={sound} onCheckedChange={toggleSound} />
+            </div>
+            <button
+              onClick={onOpenPasscode}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary transition text-left"
+            >
+              <KeyRound className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">Modify password</span>
+            </button>
+            <button
+              onClick={onOpenProfile}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary transition text-left"
+            >
+              <UserIcon className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">Edit profile</span>
+            </button>
+          </CollapsibleContent>
+        </Collapsible>
 
         <button
           onClick={onOpenShare}
