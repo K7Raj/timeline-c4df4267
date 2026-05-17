@@ -449,8 +449,8 @@ const Drawer = ({
   );
 };
 
-// Per-user settings dialog: only allows changing own passcode.
-const UserSettingsDialog = ({
+// Per-user passcode dialog: change own passcode.
+const PasscodeDialog = ({
   open,
   onOpenChange,
   userId,
@@ -462,22 +462,14 @@ const UserSettingsDialog = ({
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [sound, setSound] = useState(true);
 
   useEffect(() => {
     if (open) {
       setCurrent("");
       setNext("");
       setConfirm("");
-      setSound(getUserSettings(userId).soundEnabled);
     }
   }, [open, userId]);
-
-  const toggleSound = (v: boolean) => {
-    setSound(v);
-    saveUserSettings(userId, { soundEnabled: v });
-    setSoundEnabled(v);
-  };
 
   const save = async () => {
     const { getUser, updateUser } = await import("@/lib/auth-store");
@@ -506,27 +498,18 @@ const UserSettingsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-primary" /> Settings
+            <KeyRound className="w-4 h-4 text-primary" /> Modify password
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Update your sign-in passcode and personal preferences.
+            Update your sign-in passcode. Keep it private.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2">
-            <div>
-              <div className="text-sm font-medium">App sounds</div>
-              <div className="text-xs text-muted-foreground">Taps, chimes & sparkles</div>
-            </div>
-            <Switch checked={sound} onCheckedChange={toggleSound} />
-          </div>
-
           <div className="space-y-3">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Change passcode</div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Current passcode</label>
               <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} className="mt-1 rounded-xl" />
