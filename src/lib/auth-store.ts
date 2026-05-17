@@ -12,10 +12,30 @@ export interface User {
   createdAt: number;
   bio?: string;
   avatarEmoji?: string;
+  // First device this account signed in on. Once set, sign-in is
+  // rejected on any other device. Sharing the underlying localStorage
+  // file to a new browser/profile will fail to log in; the only
+  // sanctioned cross-device move is the encrypted vault share flow,
+  // which carries its own device id along.
+  boundDeviceId?: string;
 }
 
 const USERS_KEY = "vault-users";
 const SESSION_KEY = "vault-session"; // stores user id
+const DEVICE_KEY = "vault-device-id";
+
+export function getDeviceId(): string {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = `d-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch {
+    return "d-anon";
+  }
+}
 
 let cachedUsersRaw: string | null = null;
 let cachedUsers: User[] = [];
@@ -132,6 +152,17 @@ export function login(passcode: string): User | null {
 export function loginWithUsername(username: string, passcode: string): User | null {
   const user = getUserByUsername(username);
   if (!user || user.passcode !== passcode) return null;
+  const device = getDeviceId();
+  if (user.boundDeviceId && user.boundDeviceId !== device) {
+    throw new Error(
+      "This account is locked to another device. Import the encrypted vault on this device to continue.",
+    );
+  }
+  if (!user.boundDeviceId) {
+    // First successful sign-in on this device — bind it.
+    const users = listUsers();
+    save(users.map((u) => (u.id === user.id ? { ...u, boundDeviceId: device } : u)));
+  }
   sessionStorage.setItem(SESSION_KEY, user.id);
   sessionStorage.setItem("auth", "1");
   return user;
