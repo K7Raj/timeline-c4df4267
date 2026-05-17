@@ -868,6 +868,64 @@ const UserSettingsAdminDialog = ({
 
 export default Admin;
 
+const UserDetailsDialog = ({
+  target,
+  onClose,
+}: {
+  target: User | null;
+  onClose: () => void;
+}) => {
+  if (!target) return null;
+  const initial = (target.profileName || target.username || "U").charAt(0).toUpperCase();
+  const joined = new Date(target.createdAt).toLocaleDateString(undefined, {
+    day: "2-digit", month: "long", year: "numeric",
+  });
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-primary" /> User details
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Read-only snapshot for {target.profileName}.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center text-center gap-1 pt-1">
+          <div className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-glow">
+            {target.avatarEmoji ? <span className="leading-none">{target.avatarEmoji}</span> : initial}
+          </div>
+          <p className="font-semibold mt-1">{target.profileName}</p>
+          <p className="text-xs text-muted-foreground">@{target.username} · {target.role}</p>
+          {target.bio && (
+            <p className="text-xs mt-2 px-2 text-foreground/90 whitespace-pre-wrap">{target.bio}</p>
+          )}
+        </div>
+        <div className="mt-3 space-y-2 text-xs">
+          <div className="flex justify-between rounded-lg bg-secondary/30 px-3 py-2">
+            <span className="text-muted-foreground">Joined</span>
+            <span className="font-medium">{joined}</span>
+          </div>
+          <div className="flex justify-between rounded-lg bg-secondary/30 px-3 py-2">
+            <span className="text-muted-foreground">Device</span>
+            <span className="font-medium flex items-center gap-1">
+              <Smartphone className="w-3 h-3" />
+              {target.boundDeviceId ? "Bound" : "Not bound"}
+            </span>
+          </div>
+          <div className="flex justify-between rounded-lg bg-secondary/30 px-3 py-2">
+            <span className="text-muted-foreground">User ID</span>
+            <span className="font-mono text-[0.65rem] truncate max-w-[10rem]">{target.id}</span>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const TravelerPermsDialog = ({
   target,
   onClose,
