@@ -18,11 +18,14 @@ import {
   Lamp,
   Compass,
   X,
+  Eye,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -88,6 +91,8 @@ const Admin = () => {
   const [travelerPermsTarget, setTravelerPermsTarget] = useState<User | null>(null);
   const [resetWishTarget, setResetWishTarget] = useState<User | null>(null);
   const [userSettingsTarget, setUserSettingsTarget] = useState<User | null>(null);
+  const [viewTarget, setViewTarget] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
@@ -98,7 +103,12 @@ const Admin = () => {
 
   const refresh = () => setUsers(listUsers());
   useEffect(() => {
-    refresh();
+    // brief skeleton tick so the empty state doesn't flash
+    const t = setTimeout(() => {
+      refresh();
+      setLoading(false);
+    }, 120);
+    return () => clearTimeout(t);
   }, []);
 
   const filtered = useMemo(() => {
@@ -167,6 +177,7 @@ const Admin = () => {
       <PermsDialog target={permsTarget} onClose={() => setPermsTarget(null)} />
       <TravelerPermsDialog target={travelerPermsTarget} onClose={() => setTravelerPermsTarget(null)} />
       <UserSettingsAdminDialog target={userSettingsTarget} onClose={() => setUserSettingsTarget(null)} />
+      <UserDetailsDialog target={viewTarget} onClose={() => setViewTarget(null)} />
 
       <section className="flex-1 px-3 sm:px-5 pt-5 pb-12 max-w-4xl w-full mx-auto">
         <div className="flex items-center gap-2 mb-4">
@@ -188,7 +199,27 @@ const Admin = () => {
         </div>
 
         <div className="grid gap-3">
-          {filtered.map((u) => (
+          {loading && (
+            <>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-11 h-11 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-1">
+                    {[0, 1, 2, 3, 4].map((j) => (
+                      <Skeleton key={j} className="h-9 w-9 rounded-xl" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          {!loading && filtered.map((u) => (
             <div
               key={u.id}
               className="bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant"
@@ -209,43 +240,51 @@ const Admin = () => {
                     >
                       {u.role}
                     </span>
+                    {u.boundDeviceId && (
+                      <span title="Bound to a device" className="text-[0.6rem] text-muted-foreground flex items-center gap-0.5">
+                        <Smartphone className="w-3 h-3" /> bound
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-1 -mx-1">
+              <div className="mt-3 flex items-center gap-1 -mx-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setViewTarget(u)} aria-label="View details" title="View details">
+                  <Eye className="w-4 h-4" />
+                </Button>
                 {u.role === "user" && (
                   <>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
                       <Clock3 className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setPermsTarget(u)} aria-label="Memory Map permissions" title="Memory Map permissions">
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setPermsTarget(u)} aria-label="Memory Map permissions" title="Memory Map permissions">
                       <Shield className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setTravelerPermsTarget(u)} aria-label="Time Traveler permissions" title="Time Traveler permissions">
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setTravelerPermsTarget(u)} aria-label="Time Traveler permissions" title="Time Traveler permissions">
                       <Compass className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setUserSettingsTarget(u)} aria-label="User settings" title="User settings">
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setUserSettingsTarget(u)} aria-label="User settings" title="User settings">
                       <SettingsIcon className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setResetWishTarget(u)} aria-label="Reset wishes" title="Reset wishes">
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setResetWishTarget(u)} aria-label="Reset wishes" title="Reset wishes">
                       <Lamp className="w-4 h-4" />
                     </Button>
                   </>
                 )}
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setPwTarget(u)} aria-label="Change passcode" title="Passcode">
+                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setPwTarget(u)} aria-label="Change passcode" title="Passcode">
                   <KeyRound className="w-4 h-4" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" onClick={() => setEditing(u)} aria-label="Edit" title="Edit">
+                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setEditing(u)} aria-label="Edit" title="Edit">
                   <Pencil className="w-4 h-4" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-destructive hover:text-destructive ml-auto" onClick={() => setDelTarget(u)} aria-label="Delete" title="Delete" disabled={u.id === me?.id}>
+                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0 text-destructive hover:text-destructive" onClick={() => setDelTarget(u)} aria-label="Delete" title="Delete" disabled={u.id === me?.id}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             </div>
           ))}
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-10">
               No users match your search.
             </p>
