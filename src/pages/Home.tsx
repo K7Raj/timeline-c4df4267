@@ -235,8 +235,6 @@ const Home = () => {
           userId={user.id}
         />
       )}
-      {/* legacy settingsOpen kept for back-compat but unused */}
-      {settingsOpen && setTimeout(() => setSettingsOpen(false), 0) && null}
       {user && (
         <ProfileDialog
           open={profileOpen}
