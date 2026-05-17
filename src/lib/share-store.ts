@@ -154,7 +154,16 @@ async function applyManifest(manifest: VaultManifest) {
       if (k === "theme" || k === "media-view-prefs") continue; // device-local
       if (k === "vault-users") {
         try {
-          const incoming = JSON.parse(v) as Array<{ id: string }>;
+          const incoming = (JSON.parse(v) as Array<{ id: string; boundDeviceId?: string }>).map(
+            (u) => {
+              // Strip the sender's device binding so the receiving device can
+              // re-bind on first sign-in. Sharing accounts is only sanctioned
+              // via this encrypted vault flow.
+              const { boundDeviceId: _drop, ...rest } = u;
+              void _drop;
+              return rest;
+            },
+          );
           const existingRaw = localStorage.getItem("vault-users");
           const existing = existingRaw ? (JSON.parse(existingRaw) as Array<{ id: string }>) : [];
           const incomingIds = new Set(incoming.map((u) => u.id));
