@@ -17,6 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Bucket { key: string; label: string; count: number }
 
@@ -25,6 +26,7 @@ const Stats = () => {
   const user = getCurrentUser();
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [plans, setPlans] = useState<TravelerPlan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [firstMedia, setFirstMedia] = useState<{ url: string; kind: string } | null>(null);
   const [lastMedia, setLastMedia] = useState<{ url: string; kind: string } | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<TravelerPlan | null>(null);
@@ -33,8 +35,14 @@ const Stats = () => {
 
   useEffect(() => {
     if (!user) { navigate("/", { replace: true }); return; }
-    getEntries(user.id).then(setEntries);
-    listPlans(user.id).then(setPlans);
+    let live = true;
+    Promise.all([getEntries(user.id), listPlans(user.id)]).then(([e, p]) => {
+      if (!live) return;
+      setEntries(e);
+      setPlans(p);
+      setLoading(false);
+    });
+    return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, navigate]);
 
@@ -299,7 +307,21 @@ const Stats = () => {
       </header>
 
       <section className="px-4 pt-5 pb-12 max-w-2xl mx-auto">
-        {!summary ? (
+        {loading ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 rounded-2xl" />
+              ))}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Skeleton className="h-44 rounded-2xl" />
+              <Skeleton className="h-44 rounded-2xl" />
+            </div>
+            <Skeleton className="h-36 rounded-2xl" />
+            <Skeleton className="h-44 rounded-2xl" />
+          </div>
+        ) : !summary ? (
           <div className="text-center py-16 text-sm text-muted-foreground">
             Add memories to your Memory Map to see statistics ✨
           </div>
@@ -752,7 +774,7 @@ const Stats = () => {
       </AlertDialog>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[85dvh] overflow-y-auto">
           {detail && (
             <>
               <DialogHeader>

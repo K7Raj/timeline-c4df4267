@@ -39,14 +39,19 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      const user = loginWithUsername(username.trim(), passcode);
-      if (user) {
-        toast.success(`Welcome ${user.profileName}`);
-        navigate(user.role === "admin" ? "/admin" : "/home");
-      } else {
-        toast.error("Invalid passkey");
+      try {
+        const user = loginWithUsername(username.trim(), passcode);
+        if (user) {
+          toast.success(`Welcome ${user.profileName}`);
+          navigate(user.role === "admin" ? "/admin" : "/home");
+        } else {
+          toast.error("Invalid passkey");
+        }
+      } catch (err) {
+        toast.error(String((err as Error).message));
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }, 250);
   };
 
