@@ -774,7 +774,7 @@ const Stats = () => {
       </AlertDialog>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[85dvh] overflow-y-auto">
           {detail && (
             <>
               <DialogHeader>
