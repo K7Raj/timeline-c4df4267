@@ -80,7 +80,6 @@ const Home = () => {
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [passcodeOpen, setPasscodeOpen] = useState(false);
   const user = getCurrentUser();
