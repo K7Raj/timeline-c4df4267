@@ -261,7 +261,7 @@ const Admin = () => {
                   <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-[repeat(4,minmax(0,1fr))] gap-1 sm:flex sm:flex-wrap sm:items-center">
+              <div className="mt-3 grid grid-cols-[repeat(4,minmax(0,1fr))] justify-items-center gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-items-start">
                 <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setViewTarget(u)} aria-label="View details" title="View details">
                   <Eye className="w-4 h-4" />
                 </Button>
@@ -679,6 +679,18 @@ const SettingsDialog = ({
               <span className="text-sm">Enable sounds globally</span>
               <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
             </label>
+          </SettingCard>
+
+          <SettingCard icon={Shield} title="Security access" sub="Single-device lock and encrypted vault sharing.">
+            <div className="grid gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 p-3">
+                <span className="flex items-center gap-2 text-foreground"><Smartphone className="w-4 h-4 text-primary" /> Device lock</span>
+                <span className="font-semibold text-primary">Active</span>
+              </div>
+              <p className="leading-relaxed">
+                Accounts stay bound to one device. Use Share vault for encrypted transfers instead of copying app data.
+              </p>
+            </div>
           </SettingCard>
 
           <SettingCard icon={Quote} title="Home quotes" sub="One per line.">
