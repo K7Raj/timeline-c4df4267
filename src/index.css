@@ -89,6 +89,7 @@
     background: var(--gradient-bg);
     background-attachment: fixed;
     font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
   }
 }
 
