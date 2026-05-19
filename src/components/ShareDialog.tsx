@@ -101,7 +101,7 @@ export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto bg-gradient-card border-border rounded-2xl">
+      <DialogContent className="max-w-md w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto bg-gradient-card border-border rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-primary" /> Encrypted vault share

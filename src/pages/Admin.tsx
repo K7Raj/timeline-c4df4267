@@ -20,6 +20,7 @@ import {
   X,
   Eye,
   Smartphone,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,12 +74,19 @@ import { LibraryManager } from "@/components/LibraryManager";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
   const me = getCurrentUser();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>(() => listUsers());
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<User | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -92,7 +100,7 @@ const Admin = () => {
   const [resetWishTarget, setResetWishTarget] = useState<User | null>(null);
   const [userSettingsTarget, setUserSettingsTarget] = useState<User | null>(null);
   const [viewTarget, setViewTarget] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
@@ -102,14 +110,7 @@ const Admin = () => {
   }, [me?.id, me?.role, navigate]);
 
   const refresh = () => setUsers(listUsers());
-  useEffect(() => {
-    // brief skeleton tick so the empty state doesn't flash
-    const t = setTimeout(() => {
-      refresh();
-      setLoading(false);
-    }, 120);
-    return () => clearTimeout(t);
-  }, []);
+  useEffect(() => { refresh(); }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -160,15 +161,25 @@ const Admin = () => {
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={toggle} aria-label="Theme">
             {theme === "dark" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setGlobalSettingsOpen(true)} aria-label="Settings" title="App settings">
-            <SettingsIcon className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setShareOpen(true)} aria-label="Share">
-            <Share2 className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-xl text-destructive" onClick={handleLogout} aria-label="Logout">
-            <LogOut className="w-5 h-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-xl" aria-label="Admin menu">
+                <MoreHorizontal className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 rounded-xl border-border bg-popover">
+              <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)} className="gap-2 rounded-lg">
+                <SettingsIcon className="w-4 h-4" /> Global settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShareOpen(true)} className="gap-2 rounded-lg">
+                <Share2 className="w-4 h-4" /> Share vault
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="gap-2 rounded-lg text-destructive focus:text-destructive">
+                <LogOut className="w-4 h-4" /> Lock & sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -192,9 +203,10 @@ const Admin = () => {
           </div>
           <Button
             onClick={() => setCreateOpen(true)}
-            className="rounded-xl bg-gradient-primary text-primary-foreground"
+            className="rounded-xl bg-gradient-primary text-primary-foreground px-3 shrink-0"
+            aria-label="New user"
           >
-            <Plus className="w-4 h-4" /> New user
+            <Plus className="w-4 h-4" /> <span className="hidden min-[380px]:inline">New user</span>
           </Button>
         </div>
 
@@ -249,7 +261,7 @@ const Admin = () => {
                   <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-1 -mx-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="mt-3 grid grid-cols-[repeat(4,minmax(0,1fr))] justify-items-center gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-items-start">
                 <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setViewTarget(u)} aria-label="View details" title="View details">
                   <Eye className="w-4 h-4" />
                 </Button>
@@ -258,29 +270,43 @@ const Admin = () => {
                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
                       <Clock3 className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setPermsTarget(u)} aria-label="Memory Map permissions" title="Memory Map permissions">
-                      <Shield className="w-4 h-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setTravelerPermsTarget(u)} aria-label="Time Traveler permissions" title="Time Traveler permissions">
-                      <Compass className="w-4 h-4" />
-                    </Button>
                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setUserSettingsTarget(u)} aria-label="User settings" title="User settings">
                       <SettingsIcon className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setResetWishTarget(u)} aria-label="Reset wishes" title="Reset wishes">
-                      <Lamp className="w-4 h-4" />
-                    </Button>
                   </>
                 )}
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setPwTarget(u)} aria-label="Change passcode" title="Passcode">
-                  <KeyRound className="w-4 h-4" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setEditing(u)} aria-label="Edit" title="Edit">
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0 text-destructive hover:text-destructive" onClick={() => setDelTarget(u)} aria-label="Delete" title="Delete" disabled={u.id === me?.id}>
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" aria-label="More user actions" title="More actions">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 rounded-xl border-border bg-popover">
+                    {u.role === "user" && (
+                      <>
+                        <DropdownMenuItem onClick={() => setPermsTarget(u)} className="gap-2 rounded-lg">
+                          <Shield className="w-4 h-4" /> Memory Map access
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTravelerPermsTarget(u)} className="gap-2 rounded-lg">
+                          <Compass className="w-4 h-4" /> Time Traveler access
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setResetWishTarget(u)} className="gap-2 rounded-lg">
+                          <Lamp className="w-4 h-4" /> Reset wishes
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={() => setPwTarget(u)} className="gap-2 rounded-lg">
+                      <KeyRound className="w-4 h-4" /> Change passcode
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditing(u)} className="gap-2 rounded-lg">
+                      <Pencil className="w-4 h-4" /> Edit account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled={u.id === me?.id} onClick={() => setDelTarget(u)} className="gap-2 rounded-lg text-destructive focus:text-destructive">
+                      <Trash2 className="w-4 h-4" /> Delete user
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))}
@@ -653,6 +679,18 @@ const SettingsDialog = ({
               <span className="text-sm">Enable sounds globally</span>
               <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
             </label>
+          </SettingCard>
+
+          <SettingCard icon={Shield} title="Security access" sub="Single-device lock and encrypted vault sharing.">
+            <div className="grid gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 p-3">
+                <span className="flex items-center gap-2 text-foreground"><Smartphone className="w-4 h-4 text-primary" /> Device lock</span>
+                <span className="font-semibold text-primary">Active</span>
+              </div>
+              <p className="leading-relaxed">
+                Accounts stay bound to one device. Use Share vault for encrypted transfers instead of copying app data.
+              </p>
+            </div>
           </SettingCard>
 
           <SettingCard icon={Quote} title="Home quotes" sub="One per line.">
