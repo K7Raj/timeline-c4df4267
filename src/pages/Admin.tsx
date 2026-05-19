@@ -20,6 +20,7 @@ import {
   X,
   Eye,
   Smartphone,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,12 +74,19 @@ import { LibraryManager } from "@/components/LibraryManager";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
   const me = getCurrentUser();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>(() => listUsers());
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<User | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -92,7 +100,7 @@ const Admin = () => {
   const [resetWishTarget, setResetWishTarget] = useState<User | null>(null);
   const [userSettingsTarget, setUserSettingsTarget] = useState<User | null>(null);
   const [viewTarget, setViewTarget] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
@@ -102,14 +110,7 @@ const Admin = () => {
   }, [me?.id, me?.role, navigate]);
 
   const refresh = () => setUsers(listUsers());
-  useEffect(() => {
-    // brief skeleton tick so the empty state doesn't flash
-    const t = setTimeout(() => {
-      refresh();
-      setLoading(false);
-    }, 120);
-    return () => clearTimeout(t);
-  }, []);
+  useEffect(() => { refresh(); }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
