@@ -391,6 +391,12 @@ const Drawer = ({
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent className="pl-2">
+            <div className="mx-3 mb-2 rounded-xl border border-border bg-secondary/30 p-3 text-xs text-muted-foreground">
+              <div className="mb-1 flex items-center gap-2 font-semibold text-foreground">
+                <ShieldCheck className="w-4 h-4 text-primary" /> Single-device vault
+              </div>
+              Your account stays locked to this device. Use encrypted vault share to move it safely.
+            </div>
             <div className="flex items-center justify-between px-3 py-2.5 rounded-xl">
               <div className="flex items-center gap-3">
                 <Volume2 className="w-4 h-4 text-muted-foreground" />
@@ -412,16 +418,15 @@ const Drawer = ({
               <UserIcon className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm">Edit profile</span>
             </button>
+            <button
+              onClick={onOpenShare}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary transition text-left"
+            >
+              <Share2 className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">Share vault</span>
+            </button>
           </CollapsibleContent>
         </Collapsible>
-
-        <button
-          onClick={onOpenShare}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-secondary transition text-left"
-        >
-          <Share2 className="w-5 h-5 text-muted-foreground" />
-          <span className="text-sm font-medium">Share vault</span>
-        </button>
       </nav>
 
       <div className="p-3 border-t border-border">
