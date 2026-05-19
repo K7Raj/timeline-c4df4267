@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Volume2,
   KeyRound,
+  ShieldCheck,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,7 @@ const Home = () => {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-gradient-card border-border">
+            <SheetContent side="left" className="w-[min(18rem,calc(100vw-1rem))] p-0 bg-gradient-card border-border">
               <Drawer
                 onClose={() => setOpen(false)}
                 onLogout={handleLogout}
@@ -166,16 +167,6 @@ const Home = () => {
             {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-xl"
-            onClick={() => setShareOpen(true)}
-            aria-label="Share vault"
-          >
-            <Share2 className="w-5 h-5" />
-          </Button>
-
           <Popover open={notifOpen} onOpenChange={handleNotifToggle}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-xl relative" aria-label="Notifications">
@@ -185,7 +176,7 @@ const Home = () => {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 max-h-96 overflow-y-auto p-0" align="end">
+            <PopoverContent className="w-[calc(100vw-2rem)] max-w-80 max-h-96 overflow-y-auto p-0" align="end">
               <div className="px-3 py-2 border-b border-border flex items-center gap-2">
                 <Bell className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold">Notifications</span>
