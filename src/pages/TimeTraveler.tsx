@@ -228,6 +228,7 @@ const TimeTraveler = () => {
                         image={images[p.id]}
                         onEdit={canEdit ? () => setEditing(p) : undefined}
                         onDelete={canDelete ? () => setToDelete(p) : undefined}
+                        onAskOutcome={() => setOutcomePrompt(p)}
                       />
                     ))}
                   </div>
@@ -242,7 +243,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -251,7 +252,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
+              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -260,7 +261,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
