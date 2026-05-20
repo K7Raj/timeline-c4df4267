@@ -234,10 +234,10 @@ const Admin = () => {
           {!loading && filtered.map((u) => (
             <div
               key={u.id}
-              className="bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant"
+              className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant"
             >
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
                   {(u.profileName || u.username).charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -260,30 +260,27 @@ const Admin = () => {
                   </div>
                   <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
                 </div>
-              </div>
-              <div className="mt-3 grid grid-cols-[repeat(4,minmax(0,1fr))] justify-items-center gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-items-start">
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setViewTarget(u)} aria-label="View details" title="View details">
-                  <Eye className="w-4 h-4" />
-                </Button>
-                {u.role === "user" && (
-                  <>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => setViewTarget(u)} aria-label="View details" title="View details">
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  {u.role === "user" && (
+                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
                       <Clock3 className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setUserSettingsTarget(u)} aria-label="User settings" title="User settings">
-                      <SettingsIcon className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" aria-label="More user actions" title="More actions">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 rounded-xl border-border bg-popover">
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" aria-label="More user actions" title="More actions">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 rounded-xl border-border bg-popover">
                     {u.role === "user" && (
                       <>
+                        <DropdownMenuItem onClick={() => setUserSettingsTarget(u)} className="gap-2 rounded-lg">
+                          <SettingsIcon className="w-4 h-4" /> User settings
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setPermsTarget(u)} className="gap-2 rounded-lg">
                           <Shield className="w-4 h-4" /> Memory Map access
                         </DropdownMenuItem>
@@ -305,8 +302,9 @@ const Admin = () => {
                     <DropdownMenuItem disabled={u.id === me?.id} onClick={() => setDelTarget(u)} className="gap-2 rounded-lg text-destructive focus:text-destructive">
                       <Trash2 className="w-4 h-4" /> Delete user
                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
           ))}
