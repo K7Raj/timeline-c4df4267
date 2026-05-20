@@ -703,3 +703,42 @@ const PlanDialog = ({
 };
 
 export default TimeTraveler;
+
+const OutcomeDialog = ({
+  plan, onClose, onAnswered,
+}: {
+  plan: TravelerPlan | null;
+  onClose: () => void;
+  onAnswered: (didHappen: boolean) => void | Promise<void>;
+}) => {
+  if (!plan) return null;
+  return (
+    <Dialog open={!!plan} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm w-[calc(100vw-2rem)]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" /> Did this happen?
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-1.5 text-sm">
+          <p className="font-semibold">{plan.title}</p>
+          <p className="text-xs text-muted-foreground">
+            {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
+            {plan.location ? ` · ${plan.location}` : ""}
+          </p>
+          <p className="text-xs text-muted-foreground pt-1">
+            If yes, we'll save it to your Memory Map as a real memory. Either way it stays on this card.
+          </p>
+        </div>
+        <DialogFooter className="!flex-row !justify-end gap-2">
+          <Button variant="ghost" className="rounded-lg" onClick={() => onAnswered(false)}>
+            Didn't happen
+          </Button>
+          <Button className="rounded-lg bg-gradient-primary text-primary-foreground" onClick={() => onAnswered(true)}>
+            Yes, add to Memory Map
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
