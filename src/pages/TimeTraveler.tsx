@@ -345,9 +345,12 @@ const TimeTraveler = () => {
 
 const PlanCard = ({
   plan, image, onEdit, onDelete,
-}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void }) => {
+  onAskOutcome,
+}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
+  const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
+  const needsOutcome = past && !plan.outcome;
   return (
     <div className="bg-gradient-card border border-border rounded-2xl shadow-elegant overflow-hidden flex flex-col">
       {image ? (
@@ -395,6 +398,21 @@ const PlanCard = ({
         {plan.notes && (
           <p className="mt-1.5 text-xs text-foreground/80 line-clamp-2 whitespace-pre-wrap">{plan.notes}</p>
         )}
+        {plan.outcome === "happened" && (
+          <span className="mt-1 self-start text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500">
+            Happened ✓ Added to Memory Map
+          </span>
+        )}
+        {plan.outcome === "missed" && (
+          <span className="mt-1 self-start text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            Didn't happen
+          </span>
+        )}
+        {needsOutcome && onAskOutcome && (
+          <Button size="sm" className="mt-2 rounded-lg bg-gradient-primary text-primary-foreground h-7 text-[0.7rem]" onClick={onAskOutcome}>
+            <Sparkles className="w-3 h-3" /> Did this happen?
+          </Button>
+        )}
         {(onEdit || onDelete) && (
           <div className="mt-2 flex items-center justify-end gap-1">
             {onEdit && (
@@ -416,9 +434,12 @@ const PlanCard = ({
 
 const PlanRow = ({
   plan, onEdit, onDelete,
-}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void }) => {
+  onAskOutcome,
+}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
+  const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
+  const needsOutcome = past && !plan.outcome;
   return (
     <div className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-gradient-card shadow-elegant">
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.color} flex flex-col items-center justify-center text-white shrink-0`}>
@@ -447,9 +468,20 @@ const PlanRow = ({
         {plan.enjoyment ? (
           <div className="mt-0.5"><SmileBadge value={plan.enjoyment} /></div>
         ) : null}
+        {plan.outcome === "happened" && (
+          <span className="mt-0.5 inline-block text-[0.55rem] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500">Happened</span>
+        )}
+        {plan.outcome === "missed" && (
+          <span className="mt-0.5 inline-block text-[0.55rem] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Missed</span>
+        )}
       </div>
       {(onEdit || onDelete) && (
         <div className="flex items-center gap-0.5">
+          {needsOutcome && onAskOutcome && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-primary" onClick={onAskOutcome} aria-label="Did this happen?" title="Did this happen?">
+              <Sparkles className="w-4 h-4" />
+            </Button>
+          )}
           {onEdit && (
             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onEdit}>
               <Pencil className="w-3.5 h-3.5" />
