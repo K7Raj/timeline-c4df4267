@@ -50,6 +50,9 @@ import {
 } from "@/lib/media-store";
 import { getCurrentUser } from "@/lib/auth-store";
 import { useSettings } from "@/lib/settings-store";
+import { getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
+import { listPlans, getPlanImageUrl, type TravelerPlan } from "@/lib/traveler-store";
+import { Sparkles } from "lucide-react";
 
 const Media = () => {
   const navigate = useNavigate();
@@ -59,6 +62,8 @@ const Media = () => {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [activeFolder, setActiveFolder] = useState<Folder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [memoryMedia, setMemoryMedia] = useState<MemoryMediaItem[]>([]);
+  const [memoryPreview, setMemoryPreview] = useState<MemoryMediaItem | null>(null);
 
   // Dialogs
   const [newFolderOpen, setNewFolderOpen] = useState(false);
@@ -81,6 +86,33 @@ const Media = () => {
     setItems(its);
     setLoading(false);
   }, [userId]);
+
+  // Aggregate every photo/video stored by Memory Map + Time Traveler so the
+  // user has one place to browse media — read-only, since deletion belongs
+  // to the source feature.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!userId) return;
+      const [entries, plans] = await Promise.all([getEntries(userId), listPlans(userId)]);
+      const out: MemoryMediaItem[] = [];
+      for (const e of entries as TimelineEntry[]) {
+        if (!e.mediaKind) continue;
+        const url = await getEntryBlobUrl(e.id);
+        if (url) out.push({ id: `t-${e.id}`, source: "timeline", name: e.title, kind: e.mediaKind, url, createdAt: e.date });
+      }
+      for (const p of plans as TravelerPlan[]) {
+        if (!p.mediaKind) continue;
+        const url = await getPlanImageUrl(p.id);
+        if (url) out.push({ id: `p-${p.id}`, source: "traveler", name: p.title, kind: "image", url, createdAt: p.startDate });
+      }
+      out.sort((a, b) => b.createdAt - a.createdAt);
+      if (!cancelled) setMemoryMedia(out);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, activeFolder, items.length]);
 
   const settings = useSettings(user?.id);
   useEffect(() => {
@@ -233,17 +265,22 @@ const Media = () => {
             onOpen={setPreview}
           />
         ) : (
-          <FoldersGrid
-            folders={folders}
-            count={folderCount}
-            onOpen={setActiveFolder}
-            onRename={(f) => {
-              setRenameTarget(f);
-              setRenameValue(f.name);
-            }}
-            onDelete={(f) => setDeleteFolderTarget(f)}
-            onCreate={() => setNewFolderOpen(true)}
-          />
+          <div className="space-y-6">
+            {memoryMedia.length > 0 && (
+              <MemoryMediaSection items={memoryMedia} onOpen={setMemoryPreview} />
+            )}
+            <FoldersGrid
+              folders={folders}
+              count={folderCount}
+              onOpen={setActiveFolder}
+              onRename={(f) => {
+                setRenameTarget(f);
+                setRenameValue(f.name);
+              }}
+              onDelete={(f) => setDeleteFolderTarget(f)}
+              onCreate={() => setNewFolderOpen(true)}
+            />
+          </div>
         )}
       </section>
 
@@ -401,9 +438,72 @@ const Media = () => {
           {preview && <MediaPreview item={preview} />}
         </DialogContent>
       </Dialog>
+
+      {/* Memory media preview (read-only aggregate) */}
+      <Dialog open={!!memoryPreview} onOpenChange={(o) => !o && setMemoryPreview(null)}>
+        <DialogContent className="bg-background/95 border-border rounded-2xl max-w-3xl p-2 sm:p-4">
+          {memoryPreview && (
+            <div className="w-full flex items-center justify-center">
+              {memoryPreview.kind === "video" ? (
+                <video src={memoryPreview.url} controls autoPlay className="max-h-[80vh] w-full rounded-xl" />
+              ) : (
+                <img src={memoryPreview.url} alt={memoryPreview.name} className="max-h-[80vh] w-auto rounded-xl object-contain" />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };
+
+interface MemoryMediaItem {
+  id: string;
+  source: "timeline" | "traveler";
+  name: string;
+  kind: "image" | "video";
+  url: string;
+  createdAt: number;
+}
+
+const MemoryMediaSection = ({
+  items, onOpen,
+}: {
+  items: MemoryMediaItem[];
+  onOpen: (item: MemoryMediaItem) => void;
+}) => (
+  <div>
+    <div className="flex items-center gap-2 mb-2">
+      <Sparkles className="w-4 h-4 text-primary" />
+      <h2 className="text-sm font-bold">From your memories & plans</h2>
+      <span className="text-[0.65rem] text-muted-foreground">({items.length})</span>
+    </div>
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+      {items.map((it) => (
+        <button
+          key={it.id}
+          onClick={() => onOpen(it)}
+          className="relative aspect-square rounded-xl overflow-hidden border-2 border-border hover:border-primary/40 transition bg-secondary"
+          title={`${it.name} · ${it.source === "timeline" ? "Memory Map" : "Time Traveler"}`}
+        >
+          {it.kind === "video" ? (
+            <>
+              <video src={it.url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Play className="w-5 h-5 text-white drop-shadow" fill="white" />
+              </div>
+            </>
+          ) : (
+            <img src={it.url} alt={it.name} className="w-full h-full object-cover" loading="lazy" />
+          )}
+          <span className="absolute bottom-1 left-1 text-[0.55rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-background/80 backdrop-blur text-foreground">
+            {it.source === "timeline" ? "Memory" : "Plan"}
+          </span>
+        </button>
+      ))}
+    </div>
+  </div>
+);
 
 // ----- Subcomponents -----
 
