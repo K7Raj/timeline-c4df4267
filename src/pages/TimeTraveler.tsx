@@ -22,6 +22,8 @@ import {
   createPlan, deletePlan, getPlanImageUrl, listPlans, updatePlan,
   type PlanKind, type TravelerPlan,
 } from "@/lib/traveler-store";
+import { createEntry } from "@/lib/timeline-store";
+import localforage from "localforage";
 import { SmileRating, SmileBadge } from "@/components/SmileRating";
 import { IconPicker, ResolvedIcon } from "@/components/IconPicker";
 
@@ -63,6 +65,7 @@ const TimeTraveler = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [toDelete, setToDelete] = useState<TravelerPlan | null>(null);
   const [images, setImages] = useState<Record<string, string>>({});
+  const [outcomePrompt, setOutcomePrompt] = useState<TravelerPlan | null>(null);
 
   useEffect(() => {
     if (!user) navigate("/", { replace: true });
@@ -271,6 +274,50 @@ const TimeTraveler = () => {
         onOpenChange={(o) => { if (!o) { setCreateOpen(false); setEditing(null); } }}
         editing={editing}
         onSave={handleSave}
+      />
+
+      <OutcomeDialog
+        plan={outcomePrompt}
+        onClose={() => setOutcomePrompt(null)}
+        onAnswered={async (didHappen) => {
+          if (!outcomePrompt || !user) return;
+          if (didHappen) {
+            // Copy any cover image from traveler-blobs → File so it
+            // can be re-attached to the timeline entry.
+            let file: File | null = null;
+            if (outcomePrompt.mediaKind) {
+              try {
+                const blobs = localforage.createInstance({ name: "gayu-vault", storeName: "traveler-blobs" });
+                const b = await blobs.getItem<Blob>(outcomePrompt.id);
+                if (b) file = new File([b], `${outcomePrompt.title}.${(b.type.split("/")[1] ?? "jpg")}`, { type: b.type || "image/jpeg" });
+              } catch { /* ignore */ }
+            }
+            const created = await createEntry(user.id, {
+              date: outcomePrompt.startDate,
+              endDate: outcomePrompt.endDate,
+              title: outcomePrompt.title,
+              content: outcomePrompt.notes,
+              location: outcomePrompt.location,
+              enjoyment: outcomePrompt.enjoyment,
+              iconKey: outcomePrompt.iconKey,
+              file,
+            });
+            await updatePlan(outcomePrompt.id, {
+              outcome: "happened",
+              outcomeAt: Date.now(),
+              timelineEntryId: created.id,
+            });
+            toast({ title: "Added to Memory Map ✨", description: outcomePrompt.title });
+          } else {
+            await updatePlan(outcomePrompt.id, {
+              outcome: "missed",
+              outcomeAt: Date.now(),
+            });
+            toast({ title: "Marked as didn't happen" });
+          }
+          setOutcomePrompt(null);
+          refresh();
+        }}
       />
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
