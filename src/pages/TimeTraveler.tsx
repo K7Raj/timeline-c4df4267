@@ -22,6 +22,8 @@ import {
   createPlan, deletePlan, getPlanImageUrl, listPlans, updatePlan,
   type PlanKind, type TravelerPlan,
 } from "@/lib/traveler-store";
+import { createEntry } from "@/lib/timeline-store";
+import localforage from "localforage";
 import { SmileRating, SmileBadge } from "@/components/SmileRating";
 import { IconPicker, ResolvedIcon } from "@/components/IconPicker";
 
@@ -63,6 +65,7 @@ const TimeTraveler = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [toDelete, setToDelete] = useState<TravelerPlan | null>(null);
   const [images, setImages] = useState<Record<string, string>>({});
+  const [outcomePrompt, setOutcomePrompt] = useState<TravelerPlan | null>(null);
 
   useEffect(() => {
     if (!user) navigate("/", { replace: true });
@@ -225,6 +228,7 @@ const TimeTraveler = () => {
                         image={images[p.id]}
                         onEdit={canEdit ? () => setEditing(p) : undefined}
                         onDelete={canDelete ? () => setToDelete(p) : undefined}
+                        onAskOutcome={() => setOutcomePrompt(p)}
                       />
                     ))}
                   </div>
@@ -239,7 +243,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -248,7 +252,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
+              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -257,7 +261,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} />
+                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -271,6 +275,50 @@ const TimeTraveler = () => {
         onOpenChange={(o) => { if (!o) { setCreateOpen(false); setEditing(null); } }}
         editing={editing}
         onSave={handleSave}
+      />
+
+      <OutcomeDialog
+        plan={outcomePrompt}
+        onClose={() => setOutcomePrompt(null)}
+        onAnswered={async (didHappen) => {
+          if (!outcomePrompt || !user) return;
+          if (didHappen) {
+            // Copy any cover image from traveler-blobs → File so it
+            // can be re-attached to the timeline entry.
+            let file: File | null = null;
+            if (outcomePrompt.mediaKind) {
+              try {
+                const blobs = localforage.createInstance({ name: "gayu-vault", storeName: "traveler-blobs" });
+                const b = await blobs.getItem<Blob>(outcomePrompt.id);
+                if (b) file = new File([b], `${outcomePrompt.title}.${(b.type.split("/")[1] ?? "jpg")}`, { type: b.type || "image/jpeg" });
+              } catch { /* ignore */ }
+            }
+            const created = await createEntry(user.id, {
+              date: outcomePrompt.startDate,
+              endDate: outcomePrompt.endDate,
+              title: outcomePrompt.title,
+              content: outcomePrompt.notes,
+              location: outcomePrompt.location,
+              enjoyment: outcomePrompt.enjoyment,
+              iconKey: outcomePrompt.iconKey,
+              file,
+            });
+            await updatePlan(outcomePrompt.id, {
+              outcome: "happened",
+              outcomeAt: Date.now(),
+              timelineEntryId: created.id,
+            });
+            toast({ title: "Added to Memory Map ✨", description: outcomePrompt.title });
+          } else {
+            await updatePlan(outcomePrompt.id, {
+              outcome: "missed",
+              outcomeAt: Date.now(),
+            });
+            toast({ title: "Marked as didn't happen" });
+          }
+          setOutcomePrompt(null);
+          refresh();
+        }}
       />
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
@@ -298,9 +346,12 @@ const TimeTraveler = () => {
 
 const PlanCard = ({
   plan, image, onEdit, onDelete,
-}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void }) => {
+  onAskOutcome,
+}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
+  const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
+  const needsOutcome = past && !plan.outcome;
   return (
     <div className="bg-gradient-card border border-border rounded-2xl shadow-elegant overflow-hidden flex flex-col">
       {image ? (
@@ -348,6 +399,21 @@ const PlanCard = ({
         {plan.notes && (
           <p className="mt-1.5 text-xs text-foreground/80 line-clamp-2 whitespace-pre-wrap">{plan.notes}</p>
         )}
+        {plan.outcome === "happened" && (
+          <span className="mt-1 self-start text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500">
+            Happened ✓ Added to Memory Map
+          </span>
+        )}
+        {plan.outcome === "missed" && (
+          <span className="mt-1 self-start text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            Didn't happen
+          </span>
+        )}
+        {needsOutcome && onAskOutcome && (
+          <Button size="sm" className="mt-2 rounded-lg bg-gradient-primary text-primary-foreground h-7 text-[0.7rem]" onClick={onAskOutcome}>
+            <Sparkles className="w-3 h-3" /> Did this happen?
+          </Button>
+        )}
         {(onEdit || onDelete) && (
           <div className="mt-2 flex items-center justify-end gap-1">
             {onEdit && (
@@ -369,9 +435,12 @@ const PlanCard = ({
 
 const PlanRow = ({
   plan, onEdit, onDelete,
-}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void }) => {
+  onAskOutcome,
+}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
+  const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
+  const needsOutcome = past && !plan.outcome;
   return (
     <div className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-gradient-card shadow-elegant">
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.color} flex flex-col items-center justify-center text-white shrink-0`}>
@@ -400,9 +469,20 @@ const PlanRow = ({
         {plan.enjoyment ? (
           <div className="mt-0.5"><SmileBadge value={plan.enjoyment} /></div>
         ) : null}
+        {plan.outcome === "happened" && (
+          <span className="mt-0.5 inline-block text-[0.55rem] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500">Happened</span>
+        )}
+        {plan.outcome === "missed" && (
+          <span className="mt-0.5 inline-block text-[0.55rem] font-bold uppercase px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Missed</span>
+        )}
       </div>
       {(onEdit || onDelete) && (
         <div className="flex items-center gap-0.5">
+          {needsOutcome && onAskOutcome && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-primary" onClick={onAskOutcome} aria-label="Did this happen?" title="Did this happen?">
+              <Sparkles className="w-4 h-4" />
+            </Button>
+          )}
           {onEdit && (
             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={onEdit}>
               <Pencil className="w-3.5 h-3.5" />
@@ -624,3 +704,42 @@ const PlanDialog = ({
 };
 
 export default TimeTraveler;
+
+const OutcomeDialog = ({
+  plan, onClose, onAnswered,
+}: {
+  plan: TravelerPlan | null;
+  onClose: () => void;
+  onAnswered: (didHappen: boolean) => void | Promise<void>;
+}) => {
+  if (!plan) return null;
+  return (
+    <Dialog open={!!plan} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm w-[calc(100vw-2rem)]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" /> Did this happen?
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-1.5 text-sm">
+          <p className="font-semibold">{plan.title}</p>
+          <p className="text-xs text-muted-foreground">
+            {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
+            {plan.location ? ` · ${plan.location}` : ""}
+          </p>
+          <p className="text-xs text-muted-foreground pt-1">
+            If yes, we'll save it to your Memory Map as a real memory. Either way it stays on this card.
+          </p>
+        </div>
+        <DialogFooter className="!flex-row !justify-end gap-2">
+          <Button variant="ghost" className="rounded-lg" onClick={() => onAnswered(false)}>
+            Didn't happen
+          </Button>
+          <Button className="rounded-lg bg-gradient-primary text-primary-foreground" onClick={() => onAnswered(true)}>
+            Yes, add to Memory Map
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

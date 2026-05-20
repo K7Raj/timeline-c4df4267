@@ -19,6 +19,12 @@ export interface TravelerPlan {
   mediaKind?: "image";
   mediaMime?: string;
   createdAt: number;
+  // Set once the user has confirmed (after the start date) whether the
+  // plan happened or was missed. Used to surface a one-time prompt and
+  // to optionally mirror the plan into the Memory Map timeline.
+  outcome?: "happened" | "missed";
+  outcomeAt?: number;
+  timelineEntryId?: string;
 }
 
 const meta = localforage.createInstance({

@@ -658,6 +658,11 @@ const CandyMap = ({
                   <span className="truncate">{e.location}</span>
                 </div>
               )}
+              {e.enjoyment ? (
+                <div className="mt-1 flex">
+                  <SmileBadge value={e.enjoyment} />
+                </div>
+              ) : null}
               {selectMode && (
                 <span
                   className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[9px] font-bold ${

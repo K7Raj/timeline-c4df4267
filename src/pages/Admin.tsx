@@ -82,6 +82,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library } from "lucide-react";
+import { FolderLock, Save } from "lucide-react";
+import {
+  clearBackupFolder,
+  getBackupFolderName,
+  isPickerSupported,
+  pickBackupFolder,
+  saveEncryptedSnapshot,
+} from "@/lib/backup-folder";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -234,10 +242,10 @@ const Admin = () => {
           {!loading && filtered.map((u) => (
             <div
               key={u.id}
-              className="bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant"
+              className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant"
             >
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
                   {(u.profileName || u.username).charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -260,30 +268,27 @@ const Admin = () => {
                   </div>
                   <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
                 </div>
-              </div>
-              <div className="mt-3 grid grid-cols-[repeat(4,minmax(0,1fr))] justify-items-center gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-items-start">
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setViewTarget(u)} aria-label="View details" title="View details">
-                  <Eye className="w-4 h-4" />
-                </Button>
-                {u.role === "user" && (
-                  <>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => setViewTarget(u)} aria-label="View details" title="View details">
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  {u.role === "user" && (
+                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => navigate(`/timeline?user=${u.id}`)} aria-label="Memory Map" title="Memory Map">
                       <Clock3 className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl shrink-0" onClick={() => setUserSettingsTarget(u)} aria-label="User settings" title="User settings">
-                      <SettingsIcon className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl" aria-label="More user actions" title="More actions">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 rounded-xl border-border bg-popover">
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" aria-label="More user actions" title="More actions">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 rounded-xl border-border bg-popover">
                     {u.role === "user" && (
                       <>
+                        <DropdownMenuItem onClick={() => setUserSettingsTarget(u)} className="gap-2 rounded-lg">
+                          <SettingsIcon className="w-4 h-4" /> User settings
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setPermsTarget(u)} className="gap-2 rounded-lg">
                           <Shield className="w-4 h-4" /> Memory Map access
                         </DropdownMenuItem>
@@ -305,8 +310,9 @@ const Admin = () => {
                     <DropdownMenuItem disabled={u.id === me?.id} onClick={() => setDelTarget(u)} className="gap-2 rounded-lg text-destructive focus:text-destructive">
                       <Trash2 className="w-4 h-4" /> Delete user
                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
           ))}
@@ -693,6 +699,10 @@ const SettingsDialog = ({
             </div>
           </SettingCard>
 
+          <SettingCard icon={FolderLock} title="Encrypted backup folder" sub="Pick a device folder where snapshots are written encrypted.">
+            <BackupFolderEditor />
+          </SettingCard>
+
           <SettingCard icon={Quote} title="Home quotes" sub="One per line.">
             <Textarea
               rows={5}
@@ -905,6 +915,82 @@ const UserSettingsAdminDialog = ({
 };
 
 export default Admin;
+
+const BackupFolderEditor = () => {
+  const [folder, setFolder] = useState<string | null>(null);
+  const [pass, setPass] = useState("");
+  const [busy, setBusy] = useState(false);
+  const supported = isPickerSupported();
+
+  useEffect(() => {
+    getBackupFolderName().then(setFolder);
+  }, []);
+
+  const pick = async () => {
+    try {
+      const name = await pickBackupFolder();
+      setFolder(name);
+      if (name) toast({ title: `Folder linked: ${name}` });
+    } catch (e) {
+      toast({ title: "Could not pick folder", description: String((e as Error).message), variant: "destructive" });
+    }
+  };
+
+  const clear = async () => {
+    await clearBackupFolder();
+    setFolder(null);
+  };
+
+  const snapshot = async () => {
+    if (!pass || pass.length < 4) {
+      toast({ title: "Enter a passphrase (4+ chars)", variant: "destructive" });
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await saveEncryptedSnapshot(pass);
+      toast({
+        title: res.method === "folder" ? `Saved to ${folder}` : "Downloaded snapshot",
+        description: res.name,
+      });
+      setPass("");
+    } catch (e) {
+      toast({ title: "Snapshot failed", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 text-xs">
+      <div className="rounded-xl border border-border bg-secondary/30 p-3 flex items-center justify-between gap-2">
+        <span className="truncate">
+          {folder ? <span className="text-foreground font-semibold">{folder}</span> : <span className="text-muted-foreground">No folder linked</span>}
+        </span>
+        {folder ? (
+          <Button size="sm" variant="ghost" className="rounded-lg h-7" onClick={clear}>Clear</Button>
+        ) : null}
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" variant="secondary" className="rounded-lg flex-1" onClick={pick} disabled={!supported}>
+          <FolderLock className="w-3.5 h-3.5" /> {folder ? "Change folder" : "Choose folder"}
+        </Button>
+      </div>
+      {!supported && (
+        <p className="text-[0.65rem] text-muted-foreground leading-relaxed">
+          This device doesn't support folder picking. Snapshots will fall back to a normal encrypted download.
+        </p>
+      )}
+      <div className="pt-1 space-y-1">
+        <label className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">Snapshot passphrase</label>
+        <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="e.g. our-wedding-2025" className="rounded-lg" />
+        <Button size="sm" className="w-full rounded-lg bg-gradient-primary text-primary-foreground" onClick={snapshot} disabled={busy}>
+          <Save className="w-3.5 h-3.5" /> Save encrypted snapshot
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const UserDetailsDialog = ({
   target,
