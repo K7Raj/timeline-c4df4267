@@ -916,6 +916,82 @@ const UserSettingsAdminDialog = ({
 
 export default Admin;
 
+const BackupFolderEditor = () => {
+  const [folder, setFolder] = useState<string | null>(null);
+  const [pass, setPass] = useState("");
+  const [busy, setBusy] = useState(false);
+  const supported = isPickerSupported();
+
+  useEffect(() => {
+    getBackupFolderName().then(setFolder);
+  }, []);
+
+  const pick = async () => {
+    try {
+      const name = await pickBackupFolder();
+      setFolder(name);
+      if (name) toast({ title: `Folder linked: ${name}` });
+    } catch (e) {
+      toast({ title: "Could not pick folder", description: String((e as Error).message), variant: "destructive" });
+    }
+  };
+
+  const clear = async () => {
+    await clearBackupFolder();
+    setFolder(null);
+  };
+
+  const snapshot = async () => {
+    if (!pass || pass.length < 4) {
+      toast({ title: "Enter a passphrase (4+ chars)", variant: "destructive" });
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await saveEncryptedSnapshot(pass);
+      toast({
+        title: res.method === "folder" ? `Saved to ${folder}` : "Downloaded snapshot",
+        description: res.name,
+      });
+      setPass("");
+    } catch (e) {
+      toast({ title: "Snapshot failed", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 text-xs">
+      <div className="rounded-xl border border-border bg-secondary/30 p-3 flex items-center justify-between gap-2">
+        <span className="truncate">
+          {folder ? <span className="text-foreground font-semibold">{folder}</span> : <span className="text-muted-foreground">No folder linked</span>}
+        </span>
+        {folder ? (
+          <Button size="sm" variant="ghost" className="rounded-lg h-7" onClick={clear}>Clear</Button>
+        ) : null}
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" variant="secondary" className="rounded-lg flex-1" onClick={pick} disabled={!supported}>
+          <FolderLock className="w-3.5 h-3.5" /> {folder ? "Change folder" : "Choose folder"}
+        </Button>
+      </div>
+      {!supported && (
+        <p className="text-[0.65rem] text-muted-foreground leading-relaxed">
+          This device doesn't support folder picking. Snapshots will fall back to a normal encrypted download.
+        </p>
+      )}
+      <div className="pt-1 space-y-1">
+        <label className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">Snapshot passphrase</label>
+        <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="e.g. our-wedding-2025" className="rounded-lg" />
+        <Button size="sm" className="w-full rounded-lg bg-gradient-primary text-primary-foreground" onClick={snapshot} disabled={busy}>
+          <Save className="w-3.5 h-3.5" /> Save encrypted snapshot
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const UserDetailsDialog = ({
   target,
   onClose,
