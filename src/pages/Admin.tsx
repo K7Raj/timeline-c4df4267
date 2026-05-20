@@ -82,6 +82,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library } from "lucide-react";
+import { FolderLock, Save } from "lucide-react";
+import {
+  clearBackupFolder,
+  getBackupFolderName,
+  isPickerSupported,
+  pickBackupFolder,
+  saveEncryptedSnapshot,
+} from "@/lib/backup-folder";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -689,6 +697,10 @@ const SettingsDialog = ({
                 Accounts stay bound to one device. Use Share vault for encrypted transfers instead of copying app data.
               </p>
             </div>
+          </SettingCard>
+
+          <SettingCard icon={FolderLock} title="Encrypted backup folder" sub="Pick a device folder where snapshots are written encrypted.">
+            <BackupFolderEditor />
           </SettingCard>
 
           <SettingCard icon={Quote} title="Home quotes" sub="One per line.">
