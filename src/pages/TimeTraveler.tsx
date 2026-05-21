@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Plus, Plane, MapPin, Calendar as CalendarIcon, Trash2, Pencil,
   Compass, Image as ImageIcon, X, Activity, PartyPopper, Briefcase, Sparkles,
@@ -54,6 +54,9 @@ const daysFromNow = (ts: number) => {
 
 const TimeTraveler = () => {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const focusId = params.get("focus");
+  const [pulseId, setPulseId] = useState<string | null>(null);
   const user = getCurrentUser();
   const perms = user ? getTravelerPerms(user, user.id) : { create: false, update: false, delete: false };
   const canCreate = perms.create;
@@ -98,6 +101,23 @@ const TimeTraveler = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // Apply ?focus=ID once plans are loaded: scroll the card into view and pulse.
+  useEffect(() => {
+    if (!focusId || plans.length === 0) return;
+    if (!plans.some((p) => p.id === focusId)) return;
+    setPulseId(focusId);
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-plan-id="${focusId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    const next = new URLSearchParams(params);
+    next.delete("focus");
+    setParams(next, { replace: true });
+    const t = setTimeout(() => setPulseId(null), 2400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, plans]);
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const upcoming = plans.filter((p) => (p.endDate ?? p.startDate) >= today.getTime());
@@ -226,6 +246,7 @@ const TimeTraveler = () => {
                         key={p.id}
                         plan={p}
                         image={images[p.id]}
+                        pulse={pulseId === p.id}
                         onEdit={canEdit ? () => setEditing(p) : undefined}
                         onDelete={canDelete ? () => setToDelete(p) : undefined}
                         onAskOutcome={() => setOutcomePrompt(p)}
@@ -243,7 +264,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -252,7 +273,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+              <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -261,7 +282,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
