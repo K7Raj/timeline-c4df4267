@@ -862,6 +862,29 @@ const EntryRow = ({
   );
 };
 
+const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) => string }) => {
+  const navigate = useNavigate();
+  if (items.length === 0) return null;
+  return (
+    <ul className="mt-2 space-y-1 border-t border-border pt-2">
+      {items.map((e) => (
+        <li key={e.id}>
+          <button
+            type="button"
+            onClick={() => navigate(`/timeline?focus=${e.id}`)}
+            className="w-full flex items-center gap-2 text-left p-1.5 rounded-lg hover:bg-background/60 transition"
+          >
+            <span className="text-[0.6rem] uppercase tracking-wider font-bold text-primary shrink-0 w-16">
+              {new Date(e.date).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
+            </span>
+            <span className="text-xs font-medium truncate">{e.title}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 const StatCard = ({
   icon: Icon, label, value, suffix, sub, emoji, onClick,
 }: { icon: typeof Sparkles; label: string; value: number | string; suffix?: string; sub?: string; emoji?: boolean; onClick?: () => void }) => (
