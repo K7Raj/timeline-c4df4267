@@ -8,7 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
 import { createEntry, getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
-import { deletePlan, listPlans, type TravelerPlan } from "@/lib/traveler-store";
+import { listPlans, updatePlan, type TravelerPlan } from "@/lib/traveler-store";
+import localforage from "localforage";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -58,17 +59,34 @@ const Stats = () => {
     [plans, todayMid],
   );
 
-  const promote = async () => {
+  const answerOutcome = async (didHappen: boolean) => {
     if (!user || !promoteTarget) return;
-    await createEntry(user.id, {
-      date: promoteTarget.startDate,
-      endDate: promoteTarget.endDate,
-      title: promoteTarget.title,
-      content: [promoteTarget.location ? `📍 ${promoteTarget.location}` : "", promoteTarget.notes].filter(Boolean).join("\n\n"),
-      file: null,
-    });
-    await deletePlan(promoteTarget.id);
-    toast({ title: `Added "${promoteTarget.title}" to your Memory Map ✨` });
+    const p = promoteTarget;
+    if (didHappen) {
+      let file: File | null = null;
+      if (p.mediaKind) {
+        try {
+          const blobs = localforage.createInstance({ name: "gayu-vault", storeName: "traveler-blobs" });
+          const b = await blobs.getItem<Blob>(p.id);
+          if (b) file = new File([b], `${p.title}.${(b.type.split("/")[1] ?? "jpg")}`, { type: b.type || "image/jpeg" });
+        } catch { /* ignore */ }
+      }
+      const created = await createEntry(user.id, {
+        date: p.startDate,
+        endDate: p.endDate,
+        title: p.title,
+        content: p.notes,
+        location: p.location,
+        enjoyment: p.enjoyment,
+        iconKey: p.iconKey,
+        file,
+      });
+      await updatePlan(p.id, { outcome: "happened", outcomeAt: Date.now(), timelineEntryId: created.id });
+      toast({ title: `Added "${p.title}" to your Memory Map ✨` });
+    } else {
+      await updatePlan(p.id, { outcome: "missed", outcomeAt: Date.now() });
+      toast({ title: "Marked as didn't happen" });
+    }
     setPromoteTarget(null);
     reloadPlans();
     getEntries(user.id).then(setEntries);
