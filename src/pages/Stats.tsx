@@ -349,6 +349,7 @@ const Stats = () => {
                     <p><b>{summary.total}</b> memories saved so far.</p>
                     <p className="text-muted-foreground">First: {fmt(summary.first.date)} — “{summary.first.title}”</p>
                     <p className="text-muted-foreground">Latest: {fmt(summary.last.date)} — “{summary.last.title}”</p>
+                    <MiniList items={[...summary.sorted].reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={CalendarDays} label="Days covered" value={summary.span} suffix="d"
@@ -356,6 +357,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.span}</b> days from your first to latest memory.</p>
                     <p className="text-muted-foreground">{fmt(summary.first.date)} → {fmt(summary.last.date)}</p>
+                    <MiniList items={[summary.first, summary.last]} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Clock3} label="Unique days" value={summary.days}
@@ -363,6 +365,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p>You've logged memories on <b>{summary.days}</b> different days.</p>
                     <p className="text-muted-foreground">That's {Math.round((summary.days / summary.span) * 100)}% of your timeline span.</p>
+                    <MiniList items={[...summary.sorted].reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={ImageIcon} label="Photos" value={summary.images}
@@ -370,6 +373,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.images}</b> memories include a photo.</p>
                     <p className="text-muted-foreground">{summary.total ? Math.round((summary.images / summary.total) * 100) : 0}% of your timeline has imagery.</p>
+                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "image").reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Video} label="Videos" value={summary.videos}
@@ -377,6 +381,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.videos}</b> memories include a video.</p>
                     <p className="text-muted-foreground">{summary.total ? Math.round((summary.videos / summary.total) * 100) : 0}% of your timeline.</p>
+                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "video").reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={CalendarDays} label="Multi-day" value={summary.multiDay}
@@ -384,6 +389,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.multiDay}</b> memories span more than one day.</p>
                     <p className="text-muted-foreground">Trips, events and stretches you wanted to remember in full.</p>
+                    <MiniList items={summary.sorted.filter((e) => e.endDate && e.endDate > e.date).reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Flame} label="Day streak" value={streak}
@@ -408,6 +414,10 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{peakMonthLabel}</b> was your busiest month.</p>
                     <p className="text-muted-foreground">{summary.peakMonth[1]} memories logged that month.</p>
+                    <MiniList items={summary.sorted.filter((e) => {
+                      const d = new Date(e.date);
+                      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === summary.peakMonth[0];
+                    }).slice(0, 8)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard
@@ -423,6 +433,7 @@ const Stats = () => {
                         <p className="text-3xl">{FACES[emotions.topIdx]}</p>
                         <p><b>{FACE_LABELS[emotions.topIdx]}</b> appears most often — <b>{emotions.topCount}</b> time{emotions.topCount === 1 ? "" : "s"}.</p>
                         <p className="text-muted-foreground">Across {emotions.total} rated memories &amp; plans.</p>
+                        <MiniList items={entries.filter((e) => e.enjoyment === emotions.topIdx + 1).slice(0, 6)} fmt={fmt} />
                       </>
                     ) : (
                       <p className="text-muted-foreground">Rate memories with a smile to track your top emotion.</p>
