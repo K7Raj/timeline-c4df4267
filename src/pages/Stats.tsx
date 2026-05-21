@@ -746,20 +746,27 @@ const Stats = () => {
                 <ul className="space-y-2">
                   {overduePlans.slice(0, 6).map((p) => (
                     <li key={p.id} className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                      <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
-                        <Compass className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{p.title}</p>
-                        <p className="text-[0.7rem] text-muted-foreground">{fmt(p.startDate)}</p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/traveler?focus=${p.id}`)}
+                        className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
+                          <Compass className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">{p.title}</p>
+                          <p className="text-[0.7rem] text-muted-foreground">{fmt(p.startDate)}</p>
+                        </div>
+                      </button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="rounded-lg text-primary hover:bg-primary/10 h-8 px-2"
+                        className="rounded-lg text-primary hover:bg-primary/10 h-8 px-2 shrink-0"
                         onClick={() => setPromoteTarget(p)}
+                        aria-label="Did this happen?"
                       >
-                        <ArrowRightCircle className="w-4 h-4" /> Save
+                        <Sparkles className="w-4 h-4" />
                       </Button>
                     </li>
                   ))}
