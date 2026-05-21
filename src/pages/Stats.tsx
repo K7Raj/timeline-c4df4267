@@ -3,16 +3,13 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, ArrowRightCircle, Smile, MapPin, ChevronDown, CalendarCheck,
+  Compass, Smile, MapPin, ChevronDown, CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth-store";
 import { createEntry, getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
-import { deletePlan, listPlans, type TravelerPlan } from "@/lib/traveler-store";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { listPlans, updatePlan, type TravelerPlan } from "@/lib/traveler-store";
+import localforage from "localforage";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -58,17 +55,34 @@ const Stats = () => {
     [plans, todayMid],
   );
 
-  const promote = async () => {
+  const answerOutcome = async (didHappen: boolean) => {
     if (!user || !promoteTarget) return;
-    await createEntry(user.id, {
-      date: promoteTarget.startDate,
-      endDate: promoteTarget.endDate,
-      title: promoteTarget.title,
-      content: [promoteTarget.location ? `📍 ${promoteTarget.location}` : "", promoteTarget.notes].filter(Boolean).join("\n\n"),
-      file: null,
-    });
-    await deletePlan(promoteTarget.id);
-    toast({ title: `Added "${promoteTarget.title}" to your Memory Map ✨` });
+    const p = promoteTarget;
+    if (didHappen) {
+      let file: File | null = null;
+      if (p.mediaKind) {
+        try {
+          const blobs = localforage.createInstance({ name: "gayu-vault", storeName: "traveler-blobs" });
+          const b = await blobs.getItem<Blob>(p.id);
+          if (b) file = new File([b], `${p.title}.${(b.type.split("/")[1] ?? "jpg")}`, { type: b.type || "image/jpeg" });
+        } catch { /* ignore */ }
+      }
+      const created = await createEntry(user.id, {
+        date: p.startDate,
+        endDate: p.endDate,
+        title: p.title,
+        content: p.notes,
+        location: p.location,
+        enjoyment: p.enjoyment,
+        iconKey: p.iconKey,
+        file,
+      });
+      await updatePlan(p.id, { outcome: "happened", outcomeAt: Date.now(), timelineEntryId: created.id });
+      toast({ title: `Added "${p.title}" to your Memory Map ✨` });
+    } else {
+      await updatePlan(p.id, { outcome: "missed", outcomeAt: Date.now() });
+      toast({ title: "Marked as didn't happen" });
+    }
     setPromoteTarget(null);
     reloadPlans();
     getEntries(user.id).then(setEntries);
@@ -335,6 +349,7 @@ const Stats = () => {
                     <p><b>{summary.total}</b> memories saved so far.</p>
                     <p className="text-muted-foreground">First: {fmt(summary.first.date)} — “{summary.first.title}”</p>
                     <p className="text-muted-foreground">Latest: {fmt(summary.last.date)} — “{summary.last.title}”</p>
+                    <MiniList items={[...summary.sorted].reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={CalendarDays} label="Days covered" value={summary.span} suffix="d"
@@ -342,6 +357,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.span}</b> days from your first to latest memory.</p>
                     <p className="text-muted-foreground">{fmt(summary.first.date)} → {fmt(summary.last.date)}</p>
+                    <MiniList items={[summary.first, summary.last]} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Clock3} label="Unique days" value={summary.days}
@@ -349,6 +365,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p>You've logged memories on <b>{summary.days}</b> different days.</p>
                     <p className="text-muted-foreground">That's {Math.round((summary.days / summary.span) * 100)}% of your timeline span.</p>
+                    <MiniList items={[...summary.sorted].reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={ImageIcon} label="Photos" value={summary.images}
@@ -356,6 +373,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.images}</b> memories include a photo.</p>
                     <p className="text-muted-foreground">{summary.total ? Math.round((summary.images / summary.total) * 100) : 0}% of your timeline has imagery.</p>
+                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "image").reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Video} label="Videos" value={summary.videos}
@@ -363,6 +381,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.videos}</b> memories include a video.</p>
                     <p className="text-muted-foreground">{summary.total ? Math.round((summary.videos / summary.total) * 100) : 0}% of your timeline.</p>
+                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "video").reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={CalendarDays} label="Multi-day" value={summary.multiDay}
@@ -370,6 +389,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.multiDay}</b> memories span more than one day.</p>
                     <p className="text-muted-foreground">Trips, events and stretches you wanted to remember in full.</p>
+                    <MiniList items={summary.sorted.filter((e) => e.endDate && e.endDate > e.date).reverse().slice(0, 6)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Flame} label="Day streak" value={streak}
@@ -394,6 +414,10 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{peakMonthLabel}</b> was your busiest month.</p>
                     <p className="text-muted-foreground">{summary.peakMonth[1]} memories logged that month.</p>
+                    <MiniList items={summary.sorted.filter((e) => {
+                      const d = new Date(e.date);
+                      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === summary.peakMonth[0];
+                    }).slice(0, 8)} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard
@@ -409,6 +433,7 @@ const Stats = () => {
                         <p className="text-3xl">{FACES[emotions.topIdx]}</p>
                         <p><b>{FACE_LABELS[emotions.topIdx]}</b> appears most often — <b>{emotions.topCount}</b> time{emotions.topCount === 1 ? "" : "s"}.</p>
                         <p className="text-muted-foreground">Across {emotions.total} rated memories &amp; plans.</p>
+                        <MiniList items={entries.filter((e) => e.enjoyment === emotions.topIdx + 1).slice(0, 6)} fmt={fmt} />
                       </>
                     ) : (
                       <p className="text-muted-foreground">Rate memories with a smile to track your top emotion.</p>
@@ -732,20 +757,27 @@ const Stats = () => {
                 <ul className="space-y-2">
                   {overduePlans.slice(0, 6).map((p) => (
                     <li key={p.id} className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                      <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
-                        <Compass className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{p.title}</p>
-                        <p className="text-[0.7rem] text-muted-foreground">{fmt(p.startDate)}</p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/traveler?focus=${p.id}`)}
+                        className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
+                          <Compass className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate">{p.title}</p>
+                          <p className="text-[0.7rem] text-muted-foreground">{fmt(p.startDate)}</p>
+                        </div>
+                      </button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="rounded-lg text-primary hover:bg-primary/10 h-8 px-2"
+                        className="rounded-lg text-primary hover:bg-primary/10 h-8 px-2 shrink-0"
                         onClick={() => setPromoteTarget(p)}
+                        aria-label="Did this happen?"
                       >
-                        <ArrowRightCircle className="w-4 h-4" /> Save
+                        <Sparkles className="w-4 h-4" />
                       </Button>
                     </li>
                   ))}
@@ -756,22 +788,36 @@ const Stats = () => {
         )}
       </section>
 
-      <AlertDialog open={!!promoteTarget} onOpenChange={(o) => !o && setPromoteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Add this plan to your Memory Map?</AlertDialogTitle>
-            <AlertDialogDescription>
-              "{promoteTarget?.title}" will be saved as a memory and removed from Time Traveler.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Not yet</AlertDialogCancel>
-            <AlertDialogAction onClick={promote} className="bg-gradient-primary text-primary-foreground">
-              Add to Memory Map
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={!!promoteTarget} onOpenChange={(o) => !o && setPromoteTarget(null)}>
+        <DialogContent className="max-w-sm w-[calc(100vw-2rem)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> Did this happen?
+            </DialogTitle>
+            <DialogDescription className="sr-only">Confirm whether the plan happened</DialogDescription>
+          </DialogHeader>
+          {promoteTarget && (
+            <div className="space-y-1.5 text-sm">
+              <p className="font-semibold">{promoteTarget.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {fmt(promoteTarget.startDate)}
+                {promoteTarget.location ? ` · ${promoteTarget.location}` : ""}
+              </p>
+              <p className="text-xs text-muted-foreground pt-1">
+                If yes, we'll save it to your Memory Map as a real memory.
+              </p>
+            </div>
+          )}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <Button variant="outline" className="rounded-lg w-full sm:w-auto" onClick={() => answerOutcome(false)}>
+              Didn't happen
+            </Button>
+            <Button className="rounded-lg w-full sm:w-auto bg-gradient-primary text-primary-foreground" onClick={() => answerOutcome(true)}>
+              Yes, save it ✨
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[85dvh] overflow-y-auto">
@@ -824,6 +870,29 @@ const EntryRow = ({
         </div>
       </button>
     </li>
+  );
+};
+
+const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) => string }) => {
+  const navigate = useNavigate();
+  if (items.length === 0) return null;
+  return (
+    <ul className="mt-2 space-y-1 border-t border-border pt-2">
+      {items.map((e) => (
+        <li key={e.id}>
+          <button
+            type="button"
+            onClick={() => navigate(`/timeline?focus=${e.id}`)}
+            className="w-full flex items-center gap-2 text-left p-1.5 rounded-lg hover:bg-background/60 transition"
+          >
+            <span className="text-[0.6rem] uppercase tracking-wider font-bold text-primary shrink-0 w-16">
+              {new Date(e.date).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
+            </span>
+            <span className="text-xs font-medium truncate">{e.title}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 };
 

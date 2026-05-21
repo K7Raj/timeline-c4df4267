@@ -647,10 +647,10 @@ const CandyMap = ({
               <div className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-wider text-primary">
                 <CalendarIcon className="w-2.5 h-2.5 shrink-0" />
                 <span className="whitespace-nowrap">{fmtRange(e.date, e.endDate)}</span>
+                {cardEmoji && <span className="text-[0.7rem] leading-none shrink-0">{cardEmoji}</span>}
               </div>
-              <p className="mt-0.5 text-[0.78rem] sm:text-xs font-semibold text-foreground leading-snug break-words line-clamp-2 flex items-start gap-1">
-                {cardEmoji && <span className="text-sm leading-none shrink-0">{cardEmoji}</span>}
-                <span className="min-w-0">{e.title}</span>
+              <p className="mt-0.5 text-[0.78rem] sm:text-xs font-semibold text-foreground leading-snug break-words line-clamp-2">
+                {e.title}
               </p>
               {e.location && (
                 <div className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground truncate">

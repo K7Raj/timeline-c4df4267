@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Plus, Plane, MapPin, Calendar as CalendarIcon, Trash2, Pencil,
   Compass, Image as ImageIcon, X, Activity, PartyPopper, Briefcase, Sparkles,
@@ -54,6 +54,9 @@ const daysFromNow = (ts: number) => {
 
 const TimeTraveler = () => {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const focusId = params.get("focus");
+  const [pulseId, setPulseId] = useState<string | null>(null);
   const user = getCurrentUser();
   const perms = user ? getTravelerPerms(user, user.id) : { create: false, update: false, delete: false };
   const canCreate = perms.create;
@@ -98,6 +101,23 @@ const TimeTraveler = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // Apply ?focus=ID once plans are loaded: scroll the card into view and pulse.
+  useEffect(() => {
+    if (!focusId || plans.length === 0) return;
+    if (!plans.some((p) => p.id === focusId)) return;
+    setPulseId(focusId);
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-plan-id="${focusId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    const next = new URLSearchParams(params);
+    next.delete("focus");
+    setParams(next, { replace: true });
+    const t = setTimeout(() => setPulseId(null), 2400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, plans]);
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const upcoming = plans.filter((p) => (p.endDate ?? p.startDate) >= today.getTime());
@@ -226,6 +246,7 @@ const TimeTraveler = () => {
                         key={p.id}
                         plan={p}
                         image={images[p.id]}
+                        pulse={pulseId === p.id}
                         onEdit={canEdit ? () => setEditing(p) : undefined}
                         onDelete={canDelete ? () => setToDelete(p) : undefined}
                         onAskOutcome={() => setOutcomePrompt(p)}
@@ -243,7 +264,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -252,7 +273,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+              <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -261,7 +282,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -345,15 +366,15 @@ const TimeTraveler = () => {
 };
 
 const PlanCard = ({
-  plan, image, onEdit, onDelete,
+  plan, image, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+}: { plan: TravelerPlan; image?: string; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div className="bg-gradient-card border border-border rounded-2xl shadow-elegant overflow-hidden flex flex-col">
+    <div data-plan-id={plan.id} className={`bg-gradient-card border rounded-2xl shadow-elegant overflow-hidden flex flex-col scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       {image ? (
         <div className="aspect-video bg-secondary/40">
           <img src={image} alt={plan.title} className="w-full h-full object-cover" />
@@ -434,15 +455,15 @@ const PlanCard = ({
 };
 
 const PlanRow = ({
-  plan, onEdit, onDelete,
+  plan, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+}: { plan: TravelerPlan; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-gradient-card shadow-elegant">
+    <div data-plan-id={plan.id} className={`flex items-center gap-3 p-3 rounded-2xl border bg-gradient-card shadow-elegant scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.color} flex flex-col items-center justify-center text-white shrink-0`}>
         {days >= 0 ? (
           <>
@@ -731,12 +752,12 @@ const OutcomeDialog = ({
             If yes, we'll save it to your Memory Map as a real memory. Either way it stays on this card.
           </p>
         </div>
-        <DialogFooter className="!flex-row !justify-end gap-2">
-          <Button variant="ghost" className="rounded-lg" onClick={() => onAnswered(false)}>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <Button variant="outline" className="rounded-lg w-full sm:w-auto" onClick={() => onAnswered(false)}>
             Didn't happen
           </Button>
-          <Button className="rounded-lg bg-gradient-primary text-primary-foreground" onClick={() => onAnswered(true)}>
-            Yes, add to Memory Map
+          <Button className="rounded-lg w-full sm:w-auto bg-gradient-primary text-primary-foreground" onClick={() => onAnswered(true)}>
+            Yes, save it ✨
           </Button>
         </DialogFooter>
       </DialogContent>
