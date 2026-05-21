@@ -752,12 +752,12 @@ const OutcomeDialog = ({
             If yes, we'll save it to your Memory Map as a real memory. Either way it stays on this card.
           </p>
         </div>
-        <DialogFooter className="!flex-row !justify-end gap-2">
-          <Button variant="ghost" className="rounded-lg" onClick={() => onAnswered(false)}>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <Button variant="outline" className="rounded-lg w-full sm:w-auto" onClick={() => onAnswered(false)}>
             Didn't happen
           </Button>
-          <Button className="rounded-lg bg-gradient-primary text-primary-foreground" onClick={() => onAnswered(true)}>
-            Yes, add to Memory Map
+          <Button className="rounded-lg w-full sm:w-auto bg-gradient-primary text-primary-foreground" onClick={() => onAnswered(true)}>
+            Yes, save it ✨
           </Button>
         </DialogFooter>
       </DialogContent>
