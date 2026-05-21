@@ -366,15 +366,15 @@ const TimeTraveler = () => {
 };
 
 const PlanCard = ({
-  plan, image, onEdit, onDelete,
+  plan, image, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; image?: string; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+}: { plan: TravelerPlan; image?: string; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div className="bg-gradient-card border border-border rounded-2xl shadow-elegant overflow-hidden flex flex-col">
+    <div data-plan-id={plan.id} className={`bg-gradient-card border rounded-2xl shadow-elegant overflow-hidden flex flex-col scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       {image ? (
         <div className="aspect-video bg-secondary/40">
           <img src={image} alt={plan.title} className="w-full h-full object-cover" />
@@ -455,15 +455,15 @@ const PlanCard = ({
 };
 
 const PlanRow = ({
-  plan, onEdit, onDelete,
+  plan, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+}: { plan: TravelerPlan; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-gradient-card shadow-elegant">
+    <div data-plan-id={plan.id} className={`flex items-center gap-3 p-3 rounded-2xl border bg-gradient-card shadow-elegant scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.color} flex flex-col items-center justify-center text-white shrink-0`}>
         {days >= 0 ? (
           <>
