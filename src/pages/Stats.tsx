@@ -774,22 +774,36 @@ const Stats = () => {
         )}
       </section>
 
-      <AlertDialog open={!!promoteTarget} onOpenChange={(o) => !o && setPromoteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Add this plan to your Memory Map?</AlertDialogTitle>
-            <AlertDialogDescription>
-              "{promoteTarget?.title}" will be saved as a memory and removed from Time Traveler.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Not yet</AlertDialogCancel>
-            <AlertDialogAction onClick={promote} className="bg-gradient-primary text-primary-foreground">
-              Add to Memory Map
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={!!promoteTarget} onOpenChange={(o) => !o && setPromoteTarget(null)}>
+        <DialogContent className="max-w-sm w-[calc(100vw-2rem)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> Did this happen?
+            </DialogTitle>
+            <DialogDescription className="sr-only">Confirm whether the plan happened</DialogDescription>
+          </DialogHeader>
+          {promoteTarget && (
+            <div className="space-y-1.5 text-sm">
+              <p className="font-semibold">{promoteTarget.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {fmt(promoteTarget.startDate)}
+                {promoteTarget.location ? ` · ${promoteTarget.location}` : ""}
+              </p>
+              <p className="text-xs text-muted-foreground pt-1">
+                If yes, we'll save it to your Memory Map as a real memory.
+              </p>
+            </div>
+          )}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <Button variant="outline" className="rounded-lg w-full sm:w-auto" onClick={() => answerOutcome(false)}>
+              Didn't happen
+            </Button>
+            <Button className="rounded-lg w-full sm:w-auto bg-gradient-primary text-primary-foreground" onClick={() => answerOutcome(true)}>
+              Yes, save it ✨
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[85dvh] overflow-y-auto">
