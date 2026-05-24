@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Plus, Plane, MapPin, Calendar as CalendarIcon, Trash2, Pencil,
   Compass, Image as ImageIcon, X, Activity, PartyPopper, Briefcase, Sparkles,
@@ -54,9 +54,11 @@ const daysFromNow = (ts: number) => {
 
 const TimeTraveler = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
   const focusId = params.get("focus");
   const [pulseId, setPulseId] = useState<string | null>(null);
+  const [detailPlan, setDetailPlan] = useState<TravelerPlan | null>(null);
   const user = getCurrentUser();
   const perms = user ? getTravelerPerms(user, user.id) : { create: false, update: false, delete: false };
   const canCreate = perms.create;
@@ -105,8 +107,12 @@ const TimeTraveler = () => {
   // Apply ?focus=ID once plans are loaded: scroll the card into view and pulse.
   useEffect(() => {
     if (!focusId || plans.length === 0) return;
-    if (!plans.some((p) => p.id === focusId)) return;
+    const target = plans.find((p) => p.id === focusId);
+    if (!target) return;
     setPulseId(focusId);
+    if ((location.state as { openPlanId?: string } | null)?.openPlanId === focusId) {
+      setDetailPlan(target);
+    }
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(`[data-plan-id="${focusId}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -117,7 +123,7 @@ const TimeTraveler = () => {
     const t = setTimeout(() => setPulseId(null), 2400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusId, plans]);
+  }, [focusId, plans, location.state]);
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const upcoming = plans.filter((p) => (p.endDate ?? p.startDate) >= today.getTime());
@@ -247,6 +253,7 @@ const TimeTraveler = () => {
                         plan={p}
                         image={images[p.id]}
                         pulse={pulseId === p.id}
+                        onView={() => setDetailPlan(p)}
                         onEdit={canEdit ? () => setEditing(p) : undefined}
                         onDelete={canDelete ? () => setToDelete(p) : undefined}
                         onAskOutcome={() => setOutcomePrompt(p)}
@@ -264,7 +271,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onView={() => setDetailPlan(p)} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -273,7 +280,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+              <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onView={() => setDetailPlan(p)} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -282,7 +289,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onView={() => setDetailPlan(p)} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -341,6 +348,8 @@ const TimeTraveler = () => {
           refresh();
         }}
       />
+
+      <PlanDetailDialog plan={detailPlan} image={detailPlan ? images[detailPlan.id] : undefined} onClose={() => setDetailPlan(null)} />
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
