@@ -377,13 +377,14 @@ const TimeTraveler = () => {
 const PlanCard = ({
   plan, image, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; image?: string; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+  onView,
+}: { plan: TravelerPlan; image?: string; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void; onView?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div data-plan-id={plan.id} className={`bg-gradient-card border rounded-2xl shadow-elegant overflow-hidden flex flex-col scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
+    <div data-plan-id={plan.id} onClick={onView} className={`bg-gradient-card border rounded-2xl shadow-elegant overflow-hidden flex flex-col scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       {image ? (
         <div className="aspect-video bg-secondary/40">
           <img src={image} alt={plan.title} className="w-full h-full object-cover" />
@@ -466,13 +467,14 @@ const PlanCard = ({
 const PlanRow = ({
   plan, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+  onView,
+}: { plan: TravelerPlan; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void; onView?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div data-plan-id={plan.id} className={`flex items-center gap-3 p-3 rounded-2xl border bg-gradient-card shadow-elegant scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
+    <div data-plan-id={plan.id} onClick={onView} className={`flex items-center gap-3 p-3 rounded-2xl border bg-gradient-card shadow-elegant scroll-mt-24 transition cursor-pointer ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.color} flex flex-col items-center justify-center text-white shrink-0`}>
         {days >= 0 ? (
           <>
