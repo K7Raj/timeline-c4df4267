@@ -64,10 +64,10 @@ interface Store {
 }
 
 const normalizeSettings = (input?: Partial<AppSettings>): AppSettings => {
-  const tabNames = {
+  const tabNames: Record<TabKey, string> = {
     ...DEFAULT_TAB_NAMES,
-    ...(input?.rhythmName ? { rhythm: input.rhythmName } : {}),
     ...(input?.tabNames ?? {}),
+    rhythm: input?.rhythmName ?? input?.tabNames?.rhythm ?? DEFAULT_TAB_NAMES.rhythm,
   };
 
   return {
@@ -124,10 +124,10 @@ export function subscribeSettings(fn: () => void): () => void {
 // Merge defaults + per-user override into a complete AppSettings.
 function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
   if (!o) return d;
-  const tabNames = {
+  const tabNames: Record<TabKey, string> = {
     ...d.tabNames,
-    ...(o.rhythmName ? { rhythm: o.rhythmName } : {}),
     ...(o.tabNames ?? {}),
+    rhythm: o.rhythmName ?? o.tabNames?.rhythm ?? d.tabNames.rhythm,
   };
   return {
     welcomeHeading: o.welcomeHeading ?? d.welcomeHeading,
@@ -165,10 +165,15 @@ export function saveUserSettings(
   patch: Partial<AppSettings>,
 ) {
   const s = readStore();
-  const nextTabNames = {
+  const nextTabNames: Record<TabKey, string> = {
+    ...DEFAULT_TAB_NAMES,
     ...(s.users[userId]?.tabNames ?? {}),
-    ...(patch.rhythmName ? { rhythm: patch.rhythmName } : {}),
     ...(patch.tabNames ?? {}),
+    rhythm:
+      patch.rhythmName
+      ?? patch.tabNames?.rhythm
+      ?? s.users[userId]?.tabNames?.rhythm
+      ?? DEFAULT_TAB_NAMES.rhythm,
   };
   s.users[userId] = {
     ...(s.users[userId] ?? {}),
