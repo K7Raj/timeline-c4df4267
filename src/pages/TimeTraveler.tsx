@@ -775,3 +775,50 @@ const OutcomeDialog = ({
     </Dialog>
   );
 };
+
+const PlanDetailDialog = ({
+  plan,
+  image,
+  onClose,
+}: {
+  plan: TravelerPlan | null;
+  image?: string;
+  onClose: () => void;
+}) => {
+  if (!plan) return null;
+  return (
+    <Dialog open={!!plan} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Compass className="w-4 h-4 text-primary" /> {plan.title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {image ? (
+            <div className="rounded-xl overflow-hidden border border-border">
+              <img src={image} alt={plan.title} className="w-full max-h-64 object-cover" />
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2 text-[0.7rem] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full bg-secondary/40 px-2.5 py-1">
+              <CalendarIcon className="w-3 h-3" /> {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
+            </span>
+            {plan.location ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-secondary/40 px-2.5 py-1">
+                <MapPin className="w-3 h-3" /> {plan.location}
+              </span>
+            ) : null}
+          </div>
+          {plan.enjoyment ? <SmileRating value={plan.enjoyment} readOnly size="sm" /> : null}
+          {plan.notes ? <p className="text-sm text-foreground/85 whitespace-pre-wrap leading-relaxed">{plan.notes}</p> : null}
+          {plan.outcome ? (
+            <p className="text-xs text-muted-foreground">
+              Status: <span className="font-semibold text-foreground">{plan.outcome === "happened" ? "Happened" : "Didn't happen"}</span>
+            </p>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
