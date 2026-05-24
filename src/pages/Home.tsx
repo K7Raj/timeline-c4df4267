@@ -23,6 +23,7 @@ import {
   Volume2,
   KeyRound,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,7 @@ const Home = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [passcodeOpen, setPasscodeOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const user = getCurrentUser();
   const settings = useSettings(user?.id);
   const notices = useNotices(user?.id);
@@ -100,11 +102,17 @@ const Home = () => {
   }, [user?.id]);
 
   const handleLogout = () => {
+    setLoggingOut(true);
     logout();
     navigate("/");
   };
 
-  const enabled = baseTabs(settings.rhythmName).filter((t) => settings.enabledTabs[t.key]);
+  const enabled = baseTabs(settings.tabNames.rhythm || settings.rhythmName)
+    .map((tab) => ({
+      ...tab,
+      title: settings.tabNames[tab.key] || tab.title,
+    }))
+    .filter((t) => settings.enabledTabs[t.key]);
 
   const handleNotifToggle = (o: boolean) => {
     setNotifOpen(o);
@@ -214,6 +222,17 @@ const Home = () => {
               )}
             </PopoverContent>
           </Popover>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-xl"
+            onClick={handleLogout}
+            aria-label="Logout"
+            disabled={loggingOut}
+          >
+            {loggingOut ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogOut className="w-5 h-5" />}
+          </Button>
         </div>
       </header>
 
