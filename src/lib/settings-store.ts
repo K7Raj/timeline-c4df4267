@@ -15,6 +15,7 @@ export interface AppSettings {
   welcomeHeading: string;
   quotes: string[];
   enabledTabs: Record<TabKey, boolean>;
+  tabNames: Record<TabKey, string>;
   memoryMapCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
   travelerCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
   surpriseWishes: string[];
@@ -24,6 +25,16 @@ export interface AppSettings {
 
 const KEY = "app-settings-v2";
 const LEGACY_KEY = "app-settings-v1";
+
+export const DEFAULT_TAB_NAMES: Record<TabKey, string> = {
+  timeline: "Memory Map",
+  stats: "Statistics",
+  traveler: "Time Traveler",
+  surprise: "Surprise",
+  media: "Multimedia",
+  wish: "Make a Wish",
+  rhythm: "Rhythm of Us",
+};
 
 const defaults: AppSettings = {
   welcomeHeading: "Your special surprise awaits ✨",
@@ -35,6 +46,7 @@ const defaults: AppSettings = {
     timeline: true, stats: true, traveler: true,
     surprise: true, media: true, wish: true, rhythm: true,
   },
+  tabNames: { ...DEFAULT_TAB_NAMES },
   memoryMapCrud: {},
   travelerCrud: {},
   surpriseWishes: [
@@ -42,7 +54,7 @@ const defaults: AppSettings = {
     "May your day sparkle as bright as you ✨",
     "You are loved beyond words 💕",
   ],
-  rhythmName: "Rhythm of Us",
+  rhythmName: DEFAULT_TAB_NAMES.rhythm,
   soundEnabled: true,
 };
 
@@ -51,32 +63,39 @@ interface Store {
   users: Record<string, Partial<AppSettings>>;
 }
 
+const normalizeSettings = (input?: Partial<AppSettings>): AppSettings => {
+  const tabNames: Record<TabKey, string> = {
+    ...DEFAULT_TAB_NAMES,
+    ...(input?.tabNames ?? {}),
+    rhythm: input?.rhythmName ?? input?.tabNames?.rhythm ?? DEFAULT_TAB_NAMES.rhythm,
+  };
+
+  return {
+    ...defaults,
+    ...input,
+    enabledTabs: { ...defaults.enabledTabs, ...(input?.enabledTabs ?? {}) },
+    tabNames,
+    memoryMapCrud: { ...(input?.memoryMapCrud ?? {}) },
+    travelerCrud: { ...(input?.travelerCrud ?? {}) },
+    rhythmName: input?.rhythmName ?? tabNames.rhythm,
+  };
+};
+
 function readStore(): Store {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Store>;
       return {
-        defaults: { ...defaults, ...(parsed.defaults ?? {}),
-          enabledTabs: { ...defaults.enabledTabs, ...(parsed.defaults?.enabledTabs ?? {}) },
-          memoryMapCrud: { ...(parsed.defaults?.memoryMapCrud ?? {}) },
-          travelerCrud: { ...(parsed.defaults?.travelerCrud ?? {}) },
-        },
+        defaults: normalizeSettings(parsed.defaults),
         users: parsed.users ?? {},
       };
     }
-    // migrate legacy v1
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
       const p = JSON.parse(legacy) as Partial<AppSettings>;
       const migrated: Store = {
-        defaults: {
-          ...defaults,
-          ...p,
-          enabledTabs: { ...defaults.enabledTabs, ...(p.enabledTabs ?? {}) },
-          memoryMapCrud: { ...(p.memoryMapCrud ?? {}) },
-          travelerCrud: { ...(p.travelerCrud ?? {}) },
-        },
+        defaults: normalizeSettings(p),
         users: {},
       };
       localStorage.setItem(KEY, JSON.stringify(migrated));
@@ -85,7 +104,7 @@ function readStore(): Store {
   } catch {
     /* ignore */
   }
-  return { defaults: { ...defaults }, users: {} };
+  return { defaults: normalizeSettings(), users: {} };
 }
 
 function writeStore(s: Store) {
@@ -105,14 +124,20 @@ export function subscribeSettings(fn: () => void): () => void {
 // Merge defaults + per-user override into a complete AppSettings.
 function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
   if (!o) return d;
+  const tabNames: Record<TabKey, string> = {
+    ...d.tabNames,
+    ...(o.tabNames ?? {}),
+    rhythm: o.rhythmName ?? o.tabNames?.rhythm ?? d.tabNames.rhythm,
+  };
   return {
     welcomeHeading: o.welcomeHeading ?? d.welcomeHeading,
     quotes: o.quotes ?? d.quotes,
     enabledTabs: { ...d.enabledTabs, ...(o.enabledTabs ?? {}) },
+    tabNames,
     memoryMapCrud: d.memoryMapCrud,
     travelerCrud: d.travelerCrud,
     surpriseWishes: o.surpriseWishes ?? d.surpriseWishes,
-    rhythmName: o.rhythmName ?? d.rhythmName,
+    rhythmName: o.rhythmName ?? tabNames.rhythm,
     soundEnabled: o.soundEnabled ?? d.soundEnabled,
   };
 }
@@ -124,7 +149,7 @@ export function getSettings(): AppSettings {
 
 export function saveSettings(next: AppSettings) {
   const s = readStore();
-  s.defaults = next;
+  s.defaults = normalizeSettings(next);
   writeStore(s);
 }
 
@@ -140,7 +165,22 @@ export function saveUserSettings(
   patch: Partial<AppSettings>,
 ) {
   const s = readStore();
-  s.users[userId] = { ...(s.users[userId] ?? {}), ...patch };
+  const nextTabNames: Record<TabKey, string> = {
+    ...DEFAULT_TAB_NAMES,
+    ...(s.users[userId]?.tabNames ?? {}),
+    ...(patch.tabNames ?? {}),
+    rhythm:
+      patch.rhythmName
+      ?? patch.tabNames?.rhythm
+      ?? s.users[userId]?.tabNames?.rhythm
+      ?? DEFAULT_TAB_NAMES.rhythm,
+  };
+  s.users[userId] = {
+    ...(s.users[userId] ?? {}),
+    ...patch,
+    tabNames: nextTabNames,
+    rhythmName: patch.rhythmName ?? nextTabNames.rhythm ?? s.users[userId]?.rhythmName,
+  };
   writeStore(s);
 }
 

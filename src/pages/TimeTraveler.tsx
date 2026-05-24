@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Plus, Plane, MapPin, Calendar as CalendarIcon, Trash2, Pencil,
   Compass, Image as ImageIcon, X, Activity, PartyPopper, Briefcase, Sparkles,
@@ -54,9 +54,11 @@ const daysFromNow = (ts: number) => {
 
 const TimeTraveler = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
   const focusId = params.get("focus");
   const [pulseId, setPulseId] = useState<string | null>(null);
+  const [detailPlan, setDetailPlan] = useState<TravelerPlan | null>(null);
   const user = getCurrentUser();
   const perms = user ? getTravelerPerms(user, user.id) : { create: false, update: false, delete: false };
   const canCreate = perms.create;
@@ -105,8 +107,12 @@ const TimeTraveler = () => {
   // Apply ?focus=ID once plans are loaded: scroll the card into view and pulse.
   useEffect(() => {
     if (!focusId || plans.length === 0) return;
-    if (!plans.some((p) => p.id === focusId)) return;
+    const target = plans.find((p) => p.id === focusId);
+    if (!target) return;
     setPulseId(focusId);
+    if ((location.state as { openPlanId?: string } | null)?.openPlanId === focusId) {
+      setDetailPlan(target);
+    }
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(`[data-plan-id="${focusId}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -117,7 +123,7 @@ const TimeTraveler = () => {
     const t = setTimeout(() => setPulseId(null), 2400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusId, plans]);
+  }, [focusId, plans, location.state]);
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const upcoming = plans.filter((p) => (p.endDate ?? p.startDate) >= today.getTime());
@@ -247,6 +253,7 @@ const TimeTraveler = () => {
                         plan={p}
                         image={images[p.id]}
                         pulse={pulseId === p.id}
+                        onView={() => setDetailPlan(p)}
                         onEdit={canEdit ? () => setEditing(p) : undefined}
                         onDelete={canDelete ? () => setToDelete(p) : undefined}
                         onAskOutcome={() => setOutcomePrompt(p)}
@@ -264,7 +271,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onView={() => setDetailPlan(p)} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -273,7 +280,7 @@ const TimeTraveler = () => {
         ) : (
           <div className="space-y-2">
             {upcoming.map((p) => (
-              <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+              <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onView={() => setDetailPlan(p)} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
             ))}
             {past.length > 0 && (
               <div className="pt-4">
@@ -282,7 +289,7 @@ const TimeTraveler = () => {
                 </h3>
                 <div className="space-y-2 opacity-70">
                   {past.map((p) => (
-                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
+                    <PlanRow key={p.id} plan={p} pulse={pulseId === p.id} onView={() => setDetailPlan(p)} onEdit={canEdit ? () => setEditing(p) : undefined} onDelete={canDelete ? () => setToDelete(p) : undefined} onAskOutcome={() => setOutcomePrompt(p)} />
                   ))}
                 </div>
               </div>
@@ -342,6 +349,8 @@ const TimeTraveler = () => {
         }}
       />
 
+      <PlanDetailDialog plan={detailPlan} image={detailPlan ? images[detailPlan.id] : undefined} onClose={() => setDetailPlan(null)} />
+
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -368,13 +377,14 @@ const TimeTraveler = () => {
 const PlanCard = ({
   plan, image, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; image?: string; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+  onView,
+}: { plan: TravelerPlan; image?: string; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void; onView?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div data-plan-id={plan.id} className={`bg-gradient-card border rounded-2xl shadow-elegant overflow-hidden flex flex-col scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
+    <div data-plan-id={plan.id} onClick={onView} className={`bg-gradient-card border rounded-2xl shadow-elegant overflow-hidden flex flex-col scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       {image ? (
         <div className="aspect-video bg-secondary/40">
           <img src={image} alt={plan.title} className="w-full h-full object-cover" />
@@ -457,13 +467,14 @@ const PlanCard = ({
 const PlanRow = ({
   plan, pulse, onEdit, onDelete,
   onAskOutcome,
-}: { plan: TravelerPlan; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void }) => {
+  onView,
+}: { plan: TravelerPlan; pulse?: boolean; onEdit?: () => void; onDelete?: () => void; onAskOutcome?: () => void; onView?: () => void }) => {
   const meta = KIND_META[plan.kind];
   const days = daysFromNow(plan.startDate);
   const past = (plan.endDate ?? plan.startDate) < Date.now() - 86400000;
   const needsOutcome = past && !plan.outcome;
   return (
-    <div data-plan-id={plan.id} className={`flex items-center gap-3 p-3 rounded-2xl border bg-gradient-card shadow-elegant scroll-mt-24 transition ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
+    <div data-plan-id={plan.id} onClick={onView} className={`flex items-center gap-3 p-3 rounded-2xl border bg-gradient-card shadow-elegant scroll-mt-24 transition cursor-pointer ${pulse ? "border-primary ring-4 ring-primary/40" : "border-border"}`}>
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.color} flex flex-col items-center justify-center text-white shrink-0`}>
         {days >= 0 ? (
           <>
@@ -760,6 +771,53 @@ const OutcomeDialog = ({
             Yes, save it ✨
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const PlanDetailDialog = ({
+  plan,
+  image,
+  onClose,
+}: {
+  plan: TravelerPlan | null;
+  image?: string;
+  onClose: () => void;
+}) => {
+  if (!plan) return null;
+  return (
+    <Dialog open={!!plan} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Compass className="w-4 h-4 text-primary" /> {plan.title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {image ? (
+            <div className="rounded-xl overflow-hidden border border-border">
+              <img src={image} alt={plan.title} className="w-full max-h-64 object-cover" />
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2 text-[0.7rem] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full bg-secondary/40 px-2.5 py-1">
+              <CalendarIcon className="w-3 h-3" /> {fmtDate(plan.startDate)}{plan.endDate ? ` – ${fmtDate(plan.endDate)}` : ""}
+            </span>
+            {plan.location ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-secondary/40 px-2.5 py-1">
+                <MapPin className="w-3 h-3" /> {plan.location}
+              </span>
+            ) : null}
+          </div>
+          {plan.enjoyment ? <SmileRating value={plan.enjoyment} readOnly size="sm" /> : null}
+          {plan.notes ? <p className="text-sm text-foreground/85 whitespace-pre-wrap leading-relaxed">{plan.notes}</p> : null}
+          {plan.outcome ? (
+            <p className="text-xs text-muted-foreground">
+              Status: <span className="font-semibold text-foreground">{plan.outcome === "happened" ? "Happened" : "Didn't happen"}</span>
+            </p>
+          ) : null}
+        </div>
       </DialogContent>
     </Dialog>
   );

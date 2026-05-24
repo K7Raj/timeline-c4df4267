@@ -66,6 +66,7 @@ import {
   saveSettings,
   saveUserSettings,
   type AppSettings,
+  DEFAULT_TAB_NAMES,
   type TabKey,
 } from "@/lib/settings-store";
 import { pushNotice } from "@/lib/notifications-store";
@@ -393,6 +394,10 @@ const Admin = () => {
   );
 };
 
+const TAB_KEYS: TabKey[] = ["timeline", "stats", "traveler", "surprise", "media", "wish", "rhythm"];
+
+const getTabLabel = (settings: AppSettings, key: TabKey) => settings.tabNames[key] || DEFAULT_TAB_NAMES[key];
+
 const UserDialog = ({
   open,
   onOpenChange,
@@ -649,19 +654,9 @@ const SettingsDialog = ({
     onOpenChange(false);
   };
 
-  const tabLabels: Record<TabKey, string> = {
-    timeline: "Memory Map",
-    stats: "Statistics",
-    traveler: "Time Traveler",
-    surprise: "Surprise",
-    media: "Multimedia (legacy)",
-    wish: "Make a Wish",
-    rhythm: s.rhythmName || "Rhythm of Us",
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" /> Global defaults
@@ -729,21 +724,32 @@ const SettingsDialog = ({
             <LibraryManager />
           </SettingCard>
 
-          <SettingCard icon={LayoutGrid} title="Enabled tabs" sub="Default tabs shown to new users.">
-            <div className="space-y-2">
-              {(Object.keys(tabLabels) as TabKey[]).map((k) => (
-                <label
-                  key={k}
-                  className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30"
-                >
-                  <span className="text-sm">{tabLabels[k]}</span>
-                  <Switch
-                    checked={s.enabledTabs[k]}
-                    onCheckedChange={(v) =>
-                      setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
+          <SettingCard icon={LayoutGrid} title="Tab names & visibility" sub="Rename any tab and choose whether it appears by default.">
+            <div className="space-y-3">
+              {TAB_KEYS.map((k) => (
+                <div key={k} className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{DEFAULT_TAB_NAMES[k]}</span>
+                    <Switch
+                      checked={s.enabledTabs[k]}
+                      onCheckedChange={(v) =>
+                        setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
+                      }
+                    />
+                  </div>
+                  <Input
+                    value={getTabLabel(s, k)}
+                    onChange={(e) =>
+                      setS({
+                        ...s,
+                        tabNames: { ...s.tabNames, [k]: e.target.value },
+                        ...(k === "rhythm" ? { rhythmName: e.target.value } : {}),
+                      })
                     }
+                    placeholder={DEFAULT_TAB_NAMES[k]}
+                    className="rounded-xl"
                   />
-                </label>
+                </div>
               ))}
             </div>
           </SettingCard>
@@ -807,21 +813,12 @@ const UserSettingsAdminDialog = ({
 
   if (!target) return null;
 
-  const tabLabels: Record<TabKey, string> = {
-    timeline: "Memory Map",
-    stats: "Statistics",
-    traveler: "Time Traveler",
-    surprise: "Surprise",
-    media: "Multimedia (legacy)",
-    wish: "Make a Wish",
-    rhythm: s.rhythmName || "Rhythm of Us",
-  };
-
   const save = () => {
     saveUserSettings(target.id, {
       welcomeHeading: s.welcomeHeading,
       quotes: s.quotes,
       enabledTabs: s.enabledTabs,
+      tabNames: s.tabNames,
       surpriseWishes: s.surpriseWishes,
       rhythmName: s.rhythmName,
     });
@@ -832,7 +829,7 @@ const UserSettingsAdminDialog = ({
 
   return (
     <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <SettingsIcon className="w-4 h-4 text-primary" /> {target.profileName}'s settings
@@ -848,15 +845,6 @@ const UserSettingsAdminDialog = ({
             <Input
               value={s.welcomeHeading}
               onChange={(e) => setS({ ...s, welcomeHeading: e.target.value })}
-              className="mt-1 rounded-xl"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">"{s.rhythmName || "Rhythm of Us"}" tab name</label>
-            <Input
-              value={s.rhythmName}
-              onChange={(e) => setS({ ...s, rhythmName: e.target.value })}
-              placeholder="Rhythm of Us"
               className="mt-1 rounded-xl"
             />
           </div>
@@ -883,21 +871,32 @@ const UserSettingsAdminDialog = ({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Visible tabs</label>
-            <div className="mt-2 space-y-2">
-              {(Object.keys(tabLabels) as TabKey[]).map((k) => (
-                <label
-                  key={k}
-                  className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30"
-                >
-                  <span className="text-sm">{tabLabels[k]}</span>
-                  <Switch
-                    checked={s.enabledTabs[k]}
-                    onCheckedChange={(v) =>
-                      setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
+            <label className="text-xs font-medium text-muted-foreground">Tab names & visibility</label>
+            <div className="mt-2 space-y-3">
+              {TAB_KEYS.map((k) => (
+                <div key={k} className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{DEFAULT_TAB_NAMES[k]}</span>
+                    <Switch
+                      checked={s.enabledTabs[k]}
+                      onCheckedChange={(v) =>
+                        setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
+                      }
+                    />
+                  </div>
+                  <Input
+                    value={getTabLabel(s, k)}
+                    onChange={(e) =>
+                      setS({
+                        ...s,
+                        tabNames: { ...s.tabNames, [k]: e.target.value },
+                        ...(k === "rhythm" ? { rhythmName: e.target.value } : {}),
+                      })
                     }
+                    placeholder={DEFAULT_TAB_NAMES[k]}
+                    className="rounded-xl"
                   />
-                </label>
+                </div>
               ))}
             </div>
           </div>

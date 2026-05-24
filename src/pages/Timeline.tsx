@@ -634,6 +634,7 @@ const CandyMap = ({
 
             {/* Card — alternating side, fixed width */}
             <button
+              type="button"
               onClick={() => onToggleExpand(e.id)}
               className={`absolute text-left px-3 py-2 rounded-2xl bg-gradient-card border shadow-elegant transition active:scale-[0.98] hover:border-primary/60 ${
                 isSelected ? "border-primary/60 ring-2 ring-primary/30" : "border-border"
@@ -646,8 +647,10 @@ const CandyMap = ({
             >
               <div className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-wider text-primary">
                 <CalendarIcon className="w-2.5 h-2.5 shrink-0" />
-                <span className="whitespace-nowrap">{fmtRange(e.date, e.endDate)}</span>
-                {cardEmoji && <span className="text-[0.7rem] leading-none shrink-0">{cardEmoji}</span>}
+                <span className="whitespace-nowrap inline-flex items-center gap-1">
+                  <span>{fmtRange(e.date, e.endDate)}</span>
+                  {cardEmoji && <span className="text-[0.7rem] leading-none shrink-0">{cardEmoji}</span>}
+                </span>
               </div>
               <p className="mt-0.5 text-[0.78rem] sm:text-xs font-semibold text-foreground leading-snug break-words line-clamp-2">
                 {e.title}
@@ -678,6 +681,7 @@ const CandyMap = ({
 
             {/* Candy node */}
             <button
+              type="button"
               onClick={() => onToggleExpand(e.id)}
               className={`absolute rounded-full flex items-center justify-center border-[3px] border-background shadow-elegant transition active:scale-90 bg-gradient-primary ${
                 isSelected ? "ring-4 ring-primary/40" : ""

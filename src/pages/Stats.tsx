@@ -16,6 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const openTimelineEntry = (navigate: ReturnType<typeof useNavigate>, id: string) => {
+  navigate(`/timeline?focus=${id}`, { state: { openEntryId: id } });
+};
+
+const openTravelerPlan = (navigate: ReturnType<typeof useNavigate>, id: string) => {
+  navigate(`/traveler?focus=${id}`, { state: { openPlanId: id } });
+};
+
 interface Bucket { key: string; label: string; count: number }
 
 const Stats = () => {
@@ -349,7 +357,7 @@ const Stats = () => {
                     <p><b>{summary.total}</b> memories saved so far.</p>
                     <p className="text-muted-foreground">First: {fmt(summary.first.date)} — “{summary.first.title}”</p>
                     <p className="text-muted-foreground">Latest: {fmt(summary.last.date)} — “{summary.last.title}”</p>
-                    <MiniList items={[...summary.sorted].reverse().slice(0, 6)} fmt={fmt} />
+                    <MiniList items={[...summary.sorted].reverse()} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={CalendarDays} label="Days covered" value={summary.span} suffix="d"
@@ -365,7 +373,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p>You've logged memories on <b>{summary.days}</b> different days.</p>
                     <p className="text-muted-foreground">That's {Math.round((summary.days / summary.span) * 100)}% of your timeline span.</p>
-                    <MiniList items={[...summary.sorted].reverse().slice(0, 6)} fmt={fmt} />
+                    <MiniList items={[...summary.sorted].reverse()} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={ImageIcon} label="Photos" value={summary.images}
@@ -373,7 +381,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.images}</b> memories include a photo.</p>
                     <p className="text-muted-foreground">{summary.total ? Math.round((summary.images / summary.total) * 100) : 0}% of your timeline has imagery.</p>
-                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "image").reverse().slice(0, 6)} fmt={fmt} />
+                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "image").reverse()} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Video} label="Videos" value={summary.videos}
@@ -381,7 +389,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.videos}</b> memories include a video.</p>
                     <p className="text-muted-foreground">{summary.total ? Math.round((summary.videos / summary.total) * 100) : 0}% of your timeline.</p>
-                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "video").reverse().slice(0, 6)} fmt={fmt} />
+                    <MiniList items={summary.sorted.filter((e) => e.mediaKind === "video").reverse()} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={CalendarDays} label="Multi-day" value={summary.multiDay}
@@ -389,7 +397,7 @@ const Stats = () => {
                   <div className="space-y-1.5 text-sm">
                     <p><b>{summary.multiDay}</b> memories span more than one day.</p>
                     <p className="text-muted-foreground">Trips, events and stretches you wanted to remember in full.</p>
-                    <MiniList items={summary.sorted.filter((e) => e.endDate && e.endDate > e.date).reverse().slice(0, 6)} fmt={fmt} />
+                    <MiniList items={summary.sorted.filter((e) => e.endDate && e.endDate > e.date).reverse()} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard icon={Flame} label="Day streak" value={streak}
@@ -417,7 +425,7 @@ const Stats = () => {
                     <MiniList items={summary.sorted.filter((e) => {
                       const d = new Date(e.date);
                       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === summary.peakMonth[0];
-                    }).slice(0, 8)} fmt={fmt} />
+                      })} fmt={fmt} />
                   </div>
                 )})} />
               <StatCard
@@ -433,7 +441,7 @@ const Stats = () => {
                         <p className="text-3xl">{FACES[emotions.topIdx]}</p>
                         <p><b>{FACE_LABELS[emotions.topIdx]}</b> appears most often — <b>{emotions.topCount}</b> time{emotions.topCount === 1 ? "" : "s"}.</p>
                         <p className="text-muted-foreground">Across {emotions.total} rated memories &amp; plans.</p>
-                        <MiniList items={entries.filter((e) => e.enjoyment === emotions.topIdx + 1).slice(0, 6)} fmt={fmt} />
+                        <MiniList items={entries.filter((e) => e.enjoyment === emotions.topIdx + 1)} fmt={fmt} />
                       </>
                     ) : (
                       <p className="text-muted-foreground">Rate memories with a smile to track your top emotion.</p>
@@ -475,7 +483,7 @@ const Stats = () => {
 
             {/* First / Last with random media */}
             <div className="mt-5 grid sm:grid-cols-2 gap-3">
-              <button onClick={() => navigate(`/timeline?focus=${summary.first.id}`)} className="text-left">
+              <button type="button" onClick={() => openTimelineEntry(navigate, summary.first.id)} className="text-left">
                 <MediaInfoCard
                   label="First memory"
                   title={summary.first.title}
@@ -484,7 +492,7 @@ const Stats = () => {
                   accent={Star}
                 />
               </button>
-              <button onClick={() => navigate(`/timeline?focus=${summary.last.id}`)} className="text-left">
+              <button type="button" onClick={() => openTimelineEntry(navigate, summary.last.id)} className="text-left">
                 <MediaInfoCard
                   label="Latest memory"
                   title={summary.last.title}
@@ -687,7 +695,7 @@ const Stats = () => {
                   {upcomingAnniversaries.map(({ entry, inDays, years }) => (
                     <li key={entry.id}>
                       <button
-                        onClick={() => navigate(`/timeline?focus=${entry.id}`)}
+                        onClick={() => openTimelineEntry(navigate, entry.id)}
                         className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
                       >
                         <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
@@ -728,7 +736,7 @@ const Stats = () => {
                     return (
                       <li key={p.id}>
                         <button
-                          onClick={() => navigate("/traveler")}
+                          onClick={() => openTravelerPlan(navigate, p.id)}
                           className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
                         >
                           <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
@@ -759,7 +767,7 @@ const Stats = () => {
                     <li key={p.id} className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                       <button
                         type="button"
-                        onClick={() => navigate(`/traveler?focus=${p.id}`)}
+                        onClick={() => openTravelerPlan(navigate, p.id)}
                         className="flex items-center gap-2 flex-1 min-w-0 text-left"
                       >
                         <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
@@ -820,7 +828,7 @@ const Stats = () => {
       </Dialog>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[85dvh] overflow-y-auto">
+        <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
           {detail && (
             <>
               <DialogHeader>
@@ -855,7 +863,7 @@ const EntryRow = ({
     <li>
       <button
         type="button"
-        onClick={() => navigate(`/timeline?focus=${e.id}`)}
+        onClick={() => openTimelineEntry(navigate, e.id)}
         className={`w-full text-left flex items-start gap-3 ${compact ? "" : "p-2"} rounded-xl ${compact ? "hover:bg-background/50" : "bg-background/40 hover:bg-background/60"} transition`}
       >
         <div className={`${compact ? "w-8 h-8" : "w-9 h-9"} rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0`}>
@@ -877,12 +885,14 @@ const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) =>
   const navigate = useNavigate();
   if (items.length === 0) return null;
   return (
-    <ul className="mt-2 space-y-1 border-t border-border pt-2">
+    <div className="mt-2 border-t border-border pt-2">
+      <div className="max-h-72 overflow-y-auto pr-1">
+        <ul className="space-y-1">
       {items.map((e) => (
         <li key={e.id}>
           <button
             type="button"
-            onClick={() => navigate(`/timeline?focus=${e.id}`)}
+            onClick={() => openTimelineEntry(navigate, e.id)}
             className="w-full flex items-center gap-2 text-left p-1.5 rounded-lg hover:bg-background/60 transition"
           >
             <span className="text-[0.6rem] uppercase tracking-wider font-bold text-primary shrink-0 w-16">
@@ -892,7 +902,9 @@ const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) =>
           </button>
         </li>
       ))}
-    </ul>
+        </ul>
+      </div>
+    </div>
   );
 };
 
