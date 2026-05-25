@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, createContext, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, Smile, MapPin, ChevronDown, CalendarCheck,
+  Compass, Smile, MapPin, ChevronDown, CalendarCheck, Search, Filter, X,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getCurrentUser } from "@/lib/auth-store";
 import { createEntry, getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
 import { listPlans, updatePlan, type TravelerPlan } from "@/lib/traveler-store";
@@ -16,13 +18,19 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const openTimelineEntry = (navigate: ReturnType<typeof useNavigate>, id: string) => {
-  navigate(`/timeline?focus=${id}`, { state: { openEntryId: id } });
-};
+// Tapping any entry/plan in Stats opens a compact preview dialog with
+// Close + "Open in Memory Map / Time Traveler" — no immediate navigation.
+type Preview =
+  | { kind: "memory"; entry: TimelineEntry }
+  | { kind: "plan"; plan: TravelerPlan };
 
-const openTravelerPlan = (navigate: ReturnType<typeof useNavigate>, id: string) => {
+const PreviewCtx = createContext<((p: Preview) => void) | null>(null);
+const usePreview = () => useContext(PreviewCtx);
+
+const navigateToMemory = (navigate: ReturnType<typeof useNavigate>, id: string) =>
+  navigate(`/timeline?focus=${id}`, { state: { openEntryId: id } });
+const navigateToPlan = (navigate: ReturnType<typeof useNavigate>, id: string) =>
   navigate(`/traveler?focus=${id}`, { state: { openPlanId: id } });
-};
 
 interface Bucket { key: string; label: string; count: number }
 
