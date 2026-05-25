@@ -872,12 +872,12 @@ const EntryRow = ({
   e, ago, showYear, compact,
 }: { e: TimelineEntry; ago: (ts: number) => string; showYear?: boolean; compact?: boolean }) => {
   const d = new Date(e.date);
-  const navigate = useNavigate();
+  const openPreview = usePreview();
   return (
     <li>
       <button
         type="button"
-        onClick={() => openTimelineEntry(navigate, e.id)}
+        onClick={() => openPreview?.({ kind: "memory", entry: e })}
         className={`w-full text-left flex items-start gap-3 ${compact ? "" : "p-2"} rounded-xl ${compact ? "hover:bg-background/50" : "bg-background/40 hover:bg-background/60"} transition`}
       >
         <div className={`${compact ? "w-8 h-8" : "w-9 h-9"} rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0`}>
@@ -895,8 +895,8 @@ const EntryRow = ({
   );
 };
 
-const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) => string }) => {
-  const navigate = useNavigate();
+const MiniList = ({ items, fmt: _fmt }: { items: TimelineEntry[]; fmt: (ts: number) => string }) => {
+  const openPreview = usePreview();
   if (items.length === 0) return null;
   return (
     <div className="mt-2 border-t border-border pt-2">
@@ -906,7 +906,7 @@ const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) =>
         <li key={e.id}>
           <button
             type="button"
-            onClick={() => openTimelineEntry(navigate, e.id)}
+            onClick={() => openPreview?.({ kind: "memory", entry: e })}
             className="w-full flex items-center gap-2 text-left p-1.5 rounded-lg hover:bg-background/60 transition"
           >
             <span className="text-[0.6rem] uppercase tracking-wider font-bold text-primary shrink-0 w-16">
