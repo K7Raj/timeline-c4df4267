@@ -328,7 +328,47 @@ const Stats = () => {
     ? new Date(`${summary.peakMonth[0]}-01`).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : "—";
 
+  // Filtered list for the Browse/Explorer panel (search + range).
+  const filteredEntries = useMemo(() => {
+    const now = Date.now();
+    let from = 0;
+    if (browseRange === "30d") from = now - 30 * 86400000;
+    else if (browseRange === "6m") from = now - 182 * 86400000;
+    else if (browseRange === "year") from = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const q = browseQuery.trim().toLowerCase();
+    return entries
+      .filter((e) => e.date >= from)
+      .filter((e) => {
+        if (!q) return true;
+        return (
+          e.title.toLowerCase().includes(q) ||
+          e.content.toLowerCase().includes(q) ||
+          (e.location?.toLowerCase().includes(q) ?? false)
+        );
+      })
+      .sort((a, b) => b.date - a.date);
+  }, [entries, browseQuery, browseRange]);
+
+  // Resolve media for the preview popup if the entry has a blob.
+  useEffect(() => {
+    let live = true;
+    if (!preview || preview.kind !== "memory" || !preview.entry.mediaKind) {
+      setPreviewMedia(null);
+      return;
+    }
+    (async () => {
+      const url = await getEntryBlobUrl(preview.entry.id);
+      if (live) setPreviewMedia(url ? { url, kind: preview.entry.mediaKind! } : null);
+    })();
+    return () => {
+      live = false;
+      if (previewMedia) URL.revokeObjectURL(previewMedia.url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview]);
+
   return (
+    <PreviewCtx.Provider value={setPreview}>
     <main className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-b border-border">
         <div className="flex items-center gap-2 px-3 sm:px-4 h-14 max-w-2xl mx-auto">
@@ -343,6 +383,63 @@ const Stats = () => {
       </header>
 
       <section className="px-4 pt-5 pb-12 max-w-2xl mx-auto">
+        {/* Search + range filter (always visible when data exists) */}
+        {!loading && summary && (
+          <div className="mb-4 space-y-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={browseQuery}
+                onChange={(e) => setBrowseQuery(e.target.value)}
+                placeholder="Search memories by title, story, location…"
+                className="pl-9 pr-9 rounded-xl bg-secondary/50"
+              />
+              {browseQuery && (
+                <button type="button" onClick={() => setBrowseQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-label="Clear">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+              <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+              {(["all", "30d", "6m", "year"] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setBrowseRange(r)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                    browseRange === r
+                      ? "bg-gradient-primary text-primary-foreground border-transparent shadow-glow"
+                      : "bg-secondary/50 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {r === "all" ? "All time" : r === "30d" ? "30 days" : r === "6m" ? "6 months" : "This year"}
+                </button>
+              ))}
+              <span className="ml-auto shrink-0 text-[0.7rem] text-muted-foreground">
+                {filteredEntries.length}/{entries.length}
+              </span>
+            </div>
+            {(browseQuery || browseRange !== "all") && (
+              <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant">
+                <p className="text-[0.65rem] uppercase tracking-wider font-bold text-primary mb-2">
+                  Search results
+                </p>
+                {filteredEntries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">No memories match.</p>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto pr-1">
+                    <ul className="space-y-1.5">
+                      {filteredEntries.map((e) => (
+                        <EntryRow key={e.id} e={e} ago={ago} />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {loading ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
