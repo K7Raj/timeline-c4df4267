@@ -1,12 +1,16 @@
-// Admin tool: manage global custom emotions (emoji + label) and uploaded
-// icons (PNG/SVG data url). Used inside Admin > Global settings dialog.
+// Admin tool: manage global custom emotions (emoji + label, used to
+// capture how a Memory Map moment felt) and uploaded icons (PNG/SVG
+// data url) used as the node visual.
 
 import { useRef, useState } from "react";
-import { Plus, Trash2, Smile, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Smile, Image as ImageIcon, Pencil, Check, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { addEmotion, addIcon, removeEmotion, removeIcon, useLibrary } from "@/lib/library-store";
+import {
+  addEmotion, addIcon, removeEmotion, removeIcon,
+  updateEmotion, updateIcon, useLibrary,
+} from "@/lib/library-store";
 
 const fileToDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
