@@ -141,15 +141,27 @@ export const LibraryManager = () => {
           {lib.icons.length === 0 && (
             <span className="text-[0.7rem] text-muted-foreground italic">No custom icons yet.</span>
           )}
-          {lib.icons.map((i) => (
-            <span key={i.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-background border border-border text-xs">
-              <img src={i.dataUrl} alt={i.label} className="w-4 h-4 object-contain" />
-              <span>{i.label}</span>
-              <button type="button" onClick={() => removeIcon(i.id)} className="text-destructive/70 hover:text-destructive ml-1" aria-label="Remove">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
+          {lib.icons.map((i) =>
+            editIconId === i.id ? (
+              <span key={i.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background border border-primary text-xs">
+                <img src={i.dataUrl} alt="" className="w-4 h-4 object-contain" />
+                <Input value={editIconLabel} onChange={(ev) => setEditIconLabel(ev.target.value)} className="w-28 h-7 px-2 rounded-md text-xs" />
+                <button type="button" onClick={saveEditIcon} className="text-primary" aria-label="Save"><Check className="w-3.5 h-3.5" /></button>
+                <button type="button" onClick={() => setEditIconId(null)} className="text-muted-foreground" aria-label="Cancel"><XIcon className="w-3.5 h-3.5" /></button>
+              </span>
+            ) : (
+              <span key={i.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-background border border-border text-xs">
+                <img src={i.dataUrl} alt={i.label} className="w-4 h-4 object-contain" />
+                <span>{i.label}</span>
+                <button type="button" onClick={() => startEditIcon(i.id, i.label)} className="text-muted-foreground hover:text-primary ml-0.5" aria-label="Edit">
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button type="button" onClick={() => removeIcon(i.id)} className="text-destructive/70 hover:text-destructive" aria-label="Remove">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </span>
+            ),
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Input
