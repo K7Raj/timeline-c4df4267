@@ -956,9 +956,94 @@ const Stats = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Entry / Plan preview popup with Close + Open in source page */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="w-[min(100vw-1rem,32rem)] max-w-[32rem] max-h-[90dvh] overflow-y-auto p-0">
+          {preview && (
+            <div className="flex flex-col">
+              {preview.kind === "memory" && previewMedia && (
+                <div className="aspect-video bg-secondary/40 overflow-hidden rounded-t-lg">
+                  {previewMedia.kind === "video" ? (
+                    <video src={previewMedia.url} className="w-full h-full object-cover" controls />
+                  ) : (
+                    <img src={previewMedia.url} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              )}
+              <div className="p-4 sm:p-5 space-y-3">
+                <DialogHeader>
+                  <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-wider font-bold text-primary">
+                    {preview.kind === "memory" ? <Sparkles className="w-3 h-3" /> : <Compass className="w-3 h-3" />}
+                    {preview.kind === "memory" ? "Memory" : "Plan"}
+                  </div>
+                  <DialogTitle className="text-base leading-snug">
+                    {preview.kind === "memory" ? preview.entry.title : preview.plan.title}
+                  </DialogTitle>
+                  <DialogDescription className="sr-only">Preview details</DialogDescription>
+                </DialogHeader>
+                <div className="text-xs text-muted-foreground space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-3.5 h-3.5 text-primary" />
+                    <span>
+                      {preview.kind === "memory"
+                        ? fmt(preview.entry.date)
+                        : `${fmt(preview.plan.startDate)}${preview.plan.endDate ? ` → ${fmt(preview.plan.endDate)}` : ""}`}
+                    </span>
+                  </div>
+                  {((preview.kind === "memory" && preview.entry.location) ||
+                    (preview.kind === "plan" && preview.plan.location)) && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
+                      <span>
+                        {preview.kind === "memory" ? preview.entry.location : preview.plan.location}
+                      </span>
+                    </div>
+                  )}
+                  {((preview.kind === "memory" && preview.entry.enjoyment) ||
+                    (preview.kind === "plan" && preview.plan.enjoyment)) && (
+                    <div className="flex items-center gap-2">
+                      <Smile className="w-3.5 h-3.5 text-primary" />
+                      <span>
+                        Felt {FACE_EMOJI[(preview.kind === "memory" ? preview.entry.enjoyment! : preview.plan.enjoyment!) - 1]}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {((preview.kind === "memory" && preview.entry.content) ||
+                  (preview.kind === "plan" && preview.plan.notes)) && (
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap line-clamp-6">
+                    {preview.kind === "memory" ? preview.entry.content : preview.plan.notes}
+                  </p>
+                )}
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                  <Button variant="outline" className="rounded-lg w-full sm:w-auto" onClick={() => setPreview(null)}>
+                    Close
+                  </Button>
+                  <Button
+                    className="rounded-lg w-full sm:w-auto bg-gradient-primary text-primary-foreground"
+                    onClick={() => {
+                      if (preview.kind === "memory") navigateToMemory(navigate, preview.entry.id);
+                      else navigateToPlan(navigate, preview.plan.id);
+                      setPreview(null);
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    {preview.kind === "memory" ? "Open in Memory Map" : "Open in Time Traveler"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
+    </PreviewCtx.Provider>
   );
 };
+
+const FACE_EMOJI = ["😞", "🙁", "😐", "🙂", "😄"];
+
 
 const ordinal = (n: number) => {
   const s = ["th", "st", "nd", "rd"], v = n % 100;
