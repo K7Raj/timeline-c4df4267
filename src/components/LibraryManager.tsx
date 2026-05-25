@@ -26,6 +26,36 @@ export const LibraryManager = () => {
   const [emoLabel, setEmoLabel] = useState("");
   const [iconLabel, setIconLabel] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [editEmoId, setEditEmoId] = useState<string | null>(null);
+  const [editEmoLabel, setEditEmoLabel] = useState("");
+  const [editEmoEmoji, setEditEmoEmoji] = useState("");
+  const [editIconId, setEditIconId] = useState<string | null>(null);
+  const [editIconLabel, setEditIconLabel] = useState("");
+
+  const startEditEmo = (id: string, emoji: string, label: string) => {
+    setEditEmoId(id);
+    setEditEmoEmoji(emoji);
+    setEditEmoLabel(label);
+  };
+  const saveEditEmo = () => {
+    if (!editEmoId) return;
+    updateEmotion(editEmoId, {
+      emoji: editEmoEmoji.trim() || undefined,
+      label: editEmoLabel.trim() || undefined,
+    } as { emoji?: string; label?: string });
+    setEditEmoId(null);
+    toast({ title: "Emotion updated" });
+  };
+  const startEditIcon = (id: string, label: string) => {
+    setEditIconId(id);
+    setEditIconLabel(label);
+  };
+  const saveEditIcon = () => {
+    if (!editIconId) return;
+    updateIcon(editIconId, { label: editIconLabel.trim() || "Untitled" });
+    setEditIconId(null);
+    toast({ title: "Icon renamed" });
+  };
 
   const addEmo = () => {
     const e = emoji.trim();
