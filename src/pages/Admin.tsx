@@ -656,7 +656,8 @@ const SettingsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-5">
+
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" /> Global defaults
