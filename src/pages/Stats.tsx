@@ -709,7 +709,7 @@ const Stats = () => {
                   {upcomingAnniversaries.map(({ entry, inDays, years }) => (
                     <li key={entry.id}>
                       <button
-                        onClick={() => openTimelineEntry(navigate, entry.id)}
+                        onClick={() => setPreview({ kind: "memory", entry })}
                         className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
                       >
                         <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
@@ -750,7 +750,7 @@ const Stats = () => {
                     return (
                       <li key={p.id}>
                         <button
-                          onClick={() => openTravelerPlan(navigate, p.id)}
+                          onClick={() => setPreview({ kind: "plan", plan: p })}
                           className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
                         >
                           <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
@@ -781,7 +781,7 @@ const Stats = () => {
                     <li key={p.id} className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                       <button
                         type="button"
-                        onClick={() => openTravelerPlan(navigate, p.id)}
+                        onClick={() => setPreview({ kind: "plan", plan: p })}
                         className="flex items-center gap-2 flex-1 min-w-0 text-left"
                       >
                         <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
