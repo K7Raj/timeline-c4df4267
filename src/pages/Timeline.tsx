@@ -713,8 +713,9 @@ const CandyMap = ({
                 <div className={`bg-gradient-card border rounded-2xl p-3 shadow-glow space-y-2 ${pulseId === e.id ? "border-primary ring-4 ring-primary/40" : "border-primary/40"}`}>
                   <div className="flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-wider text-primary">
                     <CalendarIcon className="w-3 h-3" />
-                    <span>
-                      {fmtRange(e.date, e.endDate)} · {fmtYear(e.date)}
+                    <span className="inline-flex items-center gap-1">
+                      <span>{fmtRange(e.date, e.endDate)} · {fmtYear(e.date)}</span>
+                      {cardEmoji && <span className="text-sm leading-none">{cardEmoji}</span>}
                     </span>
                   </div>
                   <h3 className="text-sm font-bold leading-snug">{e.title}</h3>

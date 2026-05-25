@@ -1,12 +1,16 @@
-// Admin tool: manage global custom emotions (emoji + label) and uploaded
-// icons (PNG/SVG data url). Used inside Admin > Global settings dialog.
+// Admin tool: manage global custom emotions (emoji + label, used to
+// capture how a Memory Map moment felt) and uploaded icons (PNG/SVG
+// data url) used as the node visual.
 
 import { useRef, useState } from "react";
-import { Plus, Trash2, Smile, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Smile, Image as ImageIcon, Pencil, Check, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { addEmotion, addIcon, removeEmotion, removeIcon, useLibrary } from "@/lib/library-store";
+import {
+  addEmotion, addIcon, removeEmotion, removeIcon,
+  updateEmotion, updateIcon, useLibrary,
+} from "@/lib/library-store";
 
 const fileToDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -22,6 +26,36 @@ export const LibraryManager = () => {
   const [emoLabel, setEmoLabel] = useState("");
   const [iconLabel, setIconLabel] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [editEmoId, setEditEmoId] = useState<string | null>(null);
+  const [editEmoLabel, setEditEmoLabel] = useState("");
+  const [editEmoEmoji, setEditEmoEmoji] = useState("");
+  const [editIconId, setEditIconId] = useState<string | null>(null);
+  const [editIconLabel, setEditIconLabel] = useState("");
+
+  const startEditEmo = (id: string, emoji: string, label: string) => {
+    setEditEmoId(id);
+    setEditEmoEmoji(emoji);
+    setEditEmoLabel(label);
+  };
+  const saveEditEmo = () => {
+    if (!editEmoId) return;
+    const patch: { emoji?: string; label?: string } = {};
+    if (editEmoEmoji.trim()) patch.emoji = editEmoEmoji.trim();
+    if (editEmoLabel.trim()) patch.label = editEmoLabel.trim();
+    updateEmotion(editEmoId, patch);
+    setEditEmoId(null);
+    toast({ title: "Feeling updated" });
+  };
+  const startEditIcon = (id: string, label: string) => {
+    setEditIconId(id);
+    setEditIconLabel(label);
+  };
+  const saveEditIcon = () => {
+    if (!editIconId) return;
+    updateIcon(editIconId, { label: editIconLabel.trim() || "Untitled" });
+    setEditIconId(null);
+    toast({ title: "Icon renamed" });
+  };
 
   const addEmo = () => {
     const e = emoji.trim();
@@ -46,22 +80,37 @@ export const LibraryManager = () => {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-secondary/30 p-3">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-          <Smile className="w-3.5 h-3.5 text-primary" /> Emotions
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1.5">
+          <Smile className="w-3.5 h-3.5 text-primary" /> Feelings library
+        </p>
+        <p className="text-[0.65rem] text-muted-foreground mb-2">
+          Each emoji + label captures how a Memory Map moment felt. Users pick from this list.
         </p>
         <div className="flex flex-wrap gap-1.5 mb-2 min-h-[2rem]">
           {lib.emotions.length === 0 && (
-            <span className="text-[0.7rem] text-muted-foreground italic">No custom emotions yet.</span>
+            <span className="text-[0.7rem] text-muted-foreground italic">No feelings yet — add the first one below.</span>
           )}
-          {lib.emotions.map((e) => (
-            <span key={e.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-background border border-border text-xs">
-              <span className="text-base leading-none">{e.emoji}</span>
-              <span>{e.label}</span>
-              <button type="button" onClick={() => removeEmotion(e.id)} className="text-destructive/70 hover:text-destructive ml-1" aria-label="Remove">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
+          {lib.emotions.map((e) =>
+            editEmoId === e.id ? (
+              <span key={e.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background border border-primary text-xs">
+                <Input value={editEmoEmoji} onChange={(ev) => setEditEmoEmoji(ev.target.value)} className="w-10 h-7 px-1 rounded-md text-center text-base" maxLength={4} />
+                <Input value={editEmoLabel} onChange={(ev) => setEditEmoLabel(ev.target.value)} className="w-28 h-7 px-2 rounded-md text-xs" />
+                <button type="button" onClick={saveEditEmo} className="text-primary" aria-label="Save"><Check className="w-3.5 h-3.5" /></button>
+                <button type="button" onClick={() => setEditEmoId(null)} className="text-muted-foreground" aria-label="Cancel"><XIcon className="w-3.5 h-3.5" /></button>
+              </span>
+            ) : (
+              <span key={e.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-background border border-border text-xs">
+                <span className="text-base leading-none">{e.emoji}</span>
+                <span>{e.label}</span>
+                <button type="button" onClick={() => startEditEmo(e.id, e.emoji, e.label)} className="text-muted-foreground hover:text-primary ml-0.5" aria-label="Edit">
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button type="button" onClick={() => removeEmotion(e.id)} className="text-destructive/70 hover:text-destructive" aria-label="Remove">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </span>
+            ),
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Input
@@ -74,14 +123,14 @@ export const LibraryManager = () => {
           <Input
             value={emoLabel}
             onChange={(e) => setEmoLabel(e.target.value)}
-            placeholder="Name (e.g. In love)"
-            className="flex-1 rounded-lg"
+            placeholder="Feeling (e.g. In love)"
+            className="flex-1 min-w-0 rounded-lg"
           />
-          <Button size="sm" className="rounded-lg bg-gradient-primary text-primary-foreground" onClick={addEmo}>
+          <Button size="sm" className="rounded-lg bg-gradient-primary text-primary-foreground shrink-0" onClick={addEmo}>
             <Plus className="w-4 h-4" />
           </Button>
         </div>
-        <p className="text-[0.65rem] text-muted-foreground mt-1.5">Tip: open your emoji keyboard to insert.</p>
+        <p className="text-[0.65rem] text-muted-foreground mt-1.5">Tap a pill to rename or remove.</p>
       </div>
 
       <div className="rounded-xl border border-border bg-secondary/30 p-3">
@@ -92,15 +141,27 @@ export const LibraryManager = () => {
           {lib.icons.length === 0 && (
             <span className="text-[0.7rem] text-muted-foreground italic">No custom icons yet.</span>
           )}
-          {lib.icons.map((i) => (
-            <span key={i.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-background border border-border text-xs">
-              <img src={i.dataUrl} alt={i.label} className="w-4 h-4 object-contain" />
-              <span>{i.label}</span>
-              <button type="button" onClick={() => removeIcon(i.id)} className="text-destructive/70 hover:text-destructive ml-1" aria-label="Remove">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
+          {lib.icons.map((i) =>
+            editIconId === i.id ? (
+              <span key={i.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background border border-primary text-xs">
+                <img src={i.dataUrl} alt="" className="w-4 h-4 object-contain" />
+                <Input value={editIconLabel} onChange={(ev) => setEditIconLabel(ev.target.value)} className="w-28 h-7 px-2 rounded-md text-xs" />
+                <button type="button" onClick={saveEditIcon} className="text-primary" aria-label="Save"><Check className="w-3.5 h-3.5" /></button>
+                <button type="button" onClick={() => setEditIconId(null)} className="text-muted-foreground" aria-label="Cancel"><XIcon className="w-3.5 h-3.5" /></button>
+              </span>
+            ) : (
+              <span key={i.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-background border border-border text-xs">
+                <img src={i.dataUrl} alt={i.label} className="w-4 h-4 object-contain" />
+                <span>{i.label}</span>
+                <button type="button" onClick={() => startEditIcon(i.id, i.label)} className="text-muted-foreground hover:text-primary ml-0.5" aria-label="Edit">
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button type="button" onClick={() => removeIcon(i.id)} className="text-destructive/70 hover:text-destructive" aria-label="Remove">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </span>
+            ),
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Input

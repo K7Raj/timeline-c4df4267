@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, createContext, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, CalendarDays, Clock3, Image as ImageIcon, Video,
   Sparkles, History, CalendarRange, Flame, Hourglass, Trophy, Heart, Star,
-  Compass, Smile, MapPin, ChevronDown, CalendarCheck,
+  Compass, Smile, MapPin, ChevronDown, CalendarCheck, Search, Filter, X,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getCurrentUser } from "@/lib/auth-store";
 import { createEntry, getEntries, getEntryBlobUrl, type TimelineEntry } from "@/lib/timeline-store";
 import { listPlans, updatePlan, type TravelerPlan } from "@/lib/traveler-store";
@@ -16,13 +18,19 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const openTimelineEntry = (navigate: ReturnType<typeof useNavigate>, id: string) => {
-  navigate(`/timeline?focus=${id}`, { state: { openEntryId: id } });
-};
+// Tapping any entry/plan in Stats opens a compact preview dialog with
+// Close + "Open in Memory Map / Time Traveler" — no immediate navigation.
+type Preview =
+  | { kind: "memory"; entry: TimelineEntry }
+  | { kind: "plan"; plan: TravelerPlan };
 
-const openTravelerPlan = (navigate: ReturnType<typeof useNavigate>, id: string) => {
+const PreviewCtx = createContext<((p: Preview) => void) | null>(null);
+const usePreview = () => useContext(PreviewCtx);
+
+const navigateToMemory = (navigate: ReturnType<typeof useNavigate>, id: string) =>
+  navigate(`/timeline?focus=${id}`, { state: { openEntryId: id } });
+const navigateToPlan = (navigate: ReturnType<typeof useNavigate>, id: string) =>
   navigate(`/traveler?focus=${id}`, { state: { openPlanId: id } });
-};
 
 interface Bucket { key: string; label: string; count: number }
 
@@ -35,6 +43,12 @@ const Stats = () => {
   const [firstMedia, setFirstMedia] = useState<{ url: string; kind: string } | null>(null);
   const [lastMedia, setLastMedia] = useState<{ url: string; kind: string } | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<TravelerPlan | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{ url: string; kind: string } | null>(null);
+
+  // Browse filter (search + time range) that drives the explorer section.
+  const [browseQuery, setBrowseQuery] = useState("");
+  const [browseRange, setBrowseRange] = useState<"all" | "30d" | "6m" | "year">("all");
 
   const reloadPlans = () => { if (user) listPlans(user.id).then(setPlans); };
 
@@ -314,7 +328,47 @@ const Stats = () => {
     ? new Date(`${summary.peakMonth[0]}-01`).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : "—";
 
+  // Filtered list for the Browse/Explorer panel (search + range).
+  const filteredEntries = useMemo(() => {
+    const now = Date.now();
+    let from = 0;
+    if (browseRange === "30d") from = now - 30 * 86400000;
+    else if (browseRange === "6m") from = now - 182 * 86400000;
+    else if (browseRange === "year") from = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const q = browseQuery.trim().toLowerCase();
+    return entries
+      .filter((e) => e.date >= from)
+      .filter((e) => {
+        if (!q) return true;
+        return (
+          e.title.toLowerCase().includes(q) ||
+          e.content.toLowerCase().includes(q) ||
+          (e.location?.toLowerCase().includes(q) ?? false)
+        );
+      })
+      .sort((a, b) => b.date - a.date);
+  }, [entries, browseQuery, browseRange]);
+
+  // Resolve media for the preview popup if the entry has a blob.
+  useEffect(() => {
+    let live = true;
+    if (!preview || preview.kind !== "memory" || !preview.entry.mediaKind) {
+      setPreviewMedia(null);
+      return;
+    }
+    (async () => {
+      const url = await getEntryBlobUrl(preview.entry.id);
+      if (live) setPreviewMedia(url ? { url, kind: preview.entry.mediaKind! } : null);
+    })();
+    return () => {
+      live = false;
+      if (previewMedia) URL.revokeObjectURL(previewMedia.url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview]);
+
   return (
+    <PreviewCtx.Provider value={setPreview}>
     <main className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-b border-border">
         <div className="flex items-center gap-2 px-3 sm:px-4 h-14 max-w-2xl mx-auto">
@@ -329,6 +383,63 @@ const Stats = () => {
       </header>
 
       <section className="px-4 pt-5 pb-12 max-w-2xl mx-auto">
+        {/* Search + range filter (always visible when data exists) */}
+        {!loading && summary && (
+          <div className="mb-4 space-y-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={browseQuery}
+                onChange={(e) => setBrowseQuery(e.target.value)}
+                placeholder="Search memories by title, story, location…"
+                className="pl-9 pr-9 rounded-xl bg-secondary/50"
+              />
+              {browseQuery && (
+                <button type="button" onClick={() => setBrowseQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-label="Clear">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+              <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+              {(["all", "30d", "6m", "year"] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setBrowseRange(r)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                    browseRange === r
+                      ? "bg-gradient-primary text-primary-foreground border-transparent shadow-glow"
+                      : "bg-secondary/50 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {r === "all" ? "All time" : r === "30d" ? "30 days" : r === "6m" ? "6 months" : "This year"}
+                </button>
+              ))}
+              <span className="ml-auto shrink-0 text-[0.7rem] text-muted-foreground">
+                {filteredEntries.length}/{entries.length}
+              </span>
+            </div>
+            {(browseQuery || browseRange !== "all") && (
+              <div className="bg-gradient-card border border-border rounded-2xl p-3 shadow-elegant">
+                <p className="text-[0.65rem] uppercase tracking-wider font-bold text-primary mb-2">
+                  Search results
+                </p>
+                {filteredEntries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">No memories match.</p>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto pr-1">
+                    <ul className="space-y-1.5">
+                      {filteredEntries.map((e) => (
+                        <EntryRow key={e.id} e={e} ago={ago} />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {loading ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -483,7 +594,7 @@ const Stats = () => {
 
             {/* First / Last with random media */}
             <div className="mt-5 grid sm:grid-cols-2 gap-3">
-              <button type="button" onClick={() => openTimelineEntry(navigate, summary.first.id)} className="text-left">
+              <button type="button" onClick={() => setPreview({ kind: "memory", entry: summary.first })} className="text-left">
                 <MediaInfoCard
                   label="First memory"
                   title={summary.first.title}
@@ -492,7 +603,7 @@ const Stats = () => {
                   accent={Star}
                 />
               </button>
-              <button type="button" onClick={() => openTimelineEntry(navigate, summary.last.id)} className="text-left">
+              <button type="button" onClick={() => setPreview({ kind: "memory", entry: summary.last })} className="text-left">
                 <MediaInfoCard
                   label="Latest memory"
                   title={summary.last.title}
@@ -695,7 +806,7 @@ const Stats = () => {
                   {upcomingAnniversaries.map(({ entry, inDays, years }) => (
                     <li key={entry.id}>
                       <button
-                        onClick={() => openTimelineEntry(navigate, entry.id)}
+                        onClick={() => setPreview({ kind: "memory", entry })}
                         className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
                       >
                         <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
@@ -736,7 +847,7 @@ const Stats = () => {
                     return (
                       <li key={p.id}>
                         <button
-                          onClick={() => openTravelerPlan(navigate, p.id)}
+                          onClick={() => setPreview({ kind: "plan", plan: p })}
                           className="w-full text-left flex items-center gap-3 p-2 rounded-xl bg-background/40 hover:bg-background/60 transition"
                         >
                           <div className="w-12 h-12 rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0">
@@ -767,7 +878,7 @@ const Stats = () => {
                     <li key={p.id} className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                       <button
                         type="button"
-                        onClick={() => openTravelerPlan(navigate, p.id)}
+                        onClick={() => setPreview({ kind: "plan", plan: p })}
                         className="flex items-center gap-2 flex-1 min-w-0 text-left"
                       >
                         <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
@@ -845,9 +956,94 @@ const Stats = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Entry / Plan preview popup with Close + Open in source page */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="w-[min(100vw-1rem,32rem)] max-w-[32rem] max-h-[90dvh] overflow-y-auto p-0">
+          {preview && (
+            <div className="flex flex-col">
+              {preview.kind === "memory" && previewMedia && (
+                <div className="aspect-video bg-secondary/40 overflow-hidden rounded-t-lg">
+                  {previewMedia.kind === "video" ? (
+                    <video src={previewMedia.url} className="w-full h-full object-cover" controls />
+                  ) : (
+                    <img src={previewMedia.url} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              )}
+              <div className="p-4 sm:p-5 space-y-3">
+                <DialogHeader>
+                  <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-wider font-bold text-primary">
+                    {preview.kind === "memory" ? <Sparkles className="w-3 h-3" /> : <Compass className="w-3 h-3" />}
+                    {preview.kind === "memory" ? "Memory" : "Plan"}
+                  </div>
+                  <DialogTitle className="text-base leading-snug">
+                    {preview.kind === "memory" ? preview.entry.title : preview.plan.title}
+                  </DialogTitle>
+                  <DialogDescription className="sr-only">Preview details</DialogDescription>
+                </DialogHeader>
+                <div className="text-xs text-muted-foreground space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-3.5 h-3.5 text-primary" />
+                    <span>
+                      {preview.kind === "memory"
+                        ? fmt(preview.entry.date)
+                        : `${fmt(preview.plan.startDate)}${preview.plan.endDate ? ` → ${fmt(preview.plan.endDate)}` : ""}`}
+                    </span>
+                  </div>
+                  {((preview.kind === "memory" && preview.entry.location) ||
+                    (preview.kind === "plan" && preview.plan.location)) && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
+                      <span>
+                        {preview.kind === "memory" ? preview.entry.location : preview.plan.location}
+                      </span>
+                    </div>
+                  )}
+                  {((preview.kind === "memory" && preview.entry.enjoyment) ||
+                    (preview.kind === "plan" && preview.plan.enjoyment)) && (
+                    <div className="flex items-center gap-2">
+                      <Smile className="w-3.5 h-3.5 text-primary" />
+                      <span>
+                        Felt {FACE_EMOJI[(preview.kind === "memory" ? preview.entry.enjoyment! : preview.plan.enjoyment!) - 1]}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {((preview.kind === "memory" && preview.entry.content) ||
+                  (preview.kind === "plan" && preview.plan.notes)) && (
+                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap line-clamp-6">
+                    {preview.kind === "memory" ? preview.entry.content : preview.plan.notes}
+                  </p>
+                )}
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                  <Button variant="outline" className="rounded-lg w-full sm:w-auto" onClick={() => setPreview(null)}>
+                    Close
+                  </Button>
+                  <Button
+                    className="rounded-lg w-full sm:w-auto bg-gradient-primary text-primary-foreground"
+                    onClick={() => {
+                      if (preview.kind === "memory") navigateToMemory(navigate, preview.entry.id);
+                      else navigateToPlan(navigate, preview.plan.id);
+                      setPreview(null);
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    {preview.kind === "memory" ? "Open in Memory Map" : "Open in Time Traveler"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
+    </PreviewCtx.Provider>
   );
 };
+
+const FACE_EMOJI = ["😞", "🙁", "😐", "🙂", "😄"];
+
 
 const ordinal = (n: number) => {
   const s = ["th", "st", "nd", "rd"], v = n % 100;
@@ -858,12 +1054,12 @@ const EntryRow = ({
   e, ago, showYear, compact,
 }: { e: TimelineEntry; ago: (ts: number) => string; showYear?: boolean; compact?: boolean }) => {
   const d = new Date(e.date);
-  const navigate = useNavigate();
+  const openPreview = usePreview();
   return (
     <li>
       <button
         type="button"
-        onClick={() => openTimelineEntry(navigate, e.id)}
+        onClick={() => openPreview?.({ kind: "memory", entry: e })}
         className={`w-full text-left flex items-start gap-3 ${compact ? "" : "p-2"} rounded-xl ${compact ? "hover:bg-background/50" : "bg-background/40 hover:bg-background/60"} transition`}
       >
         <div className={`${compact ? "w-8 h-8" : "w-9 h-9"} rounded-lg bg-gradient-primary flex flex-col items-center justify-center text-primary-foreground shrink-0`}>
@@ -881,8 +1077,8 @@ const EntryRow = ({
   );
 };
 
-const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) => string }) => {
-  const navigate = useNavigate();
+const MiniList = ({ items, fmt: _fmt }: { items: TimelineEntry[]; fmt: (ts: number) => string }) => {
+  const openPreview = usePreview();
   if (items.length === 0) return null;
   return (
     <div className="mt-2 border-t border-border pt-2">
@@ -892,7 +1088,7 @@ const MiniList = ({ items, fmt }: { items: TimelineEntry[]; fmt: (ts: number) =>
         <li key={e.id}>
           <button
             type="button"
-            onClick={() => openTimelineEntry(navigate, e.id)}
+            onClick={() => openPreview?.({ kind: "memory", entry: e })}
             className="w-full flex items-center gap-2 text-left p-1.5 rounded-lg hover:bg-background/60 transition"
           >
             <span className="text-[0.6rem] uppercase tracking-wider font-bold text-primary shrink-0 w-16">

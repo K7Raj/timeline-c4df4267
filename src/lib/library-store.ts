@@ -54,6 +54,11 @@ export function removeEmotion(id: string) {
   l.emotions = l.emotions.filter((e) => e.id !== id);
   write(l);
 }
+export function updateEmotion(id: string, patch: Partial<Pick<CustomEmotion, "emoji" | "label">>) {
+  const l = read();
+  l.emotions = l.emotions.map((e) => (e.id === id ? { ...e, ...patch } : e));
+  write(l);
+}
 
 export function addIcon(label: string, dataUrl: string) {
   const l = read();
@@ -64,6 +69,11 @@ export function addIcon(label: string, dataUrl: string) {
 export function removeIcon(id: string) {
   const l = read();
   l.icons = l.icons.filter((i) => i.id !== id);
+  write(l);
+}
+export function updateIcon(id: string, patch: Partial<Pick<CustomIcon, "label">>) {
+  const l = read();
+  l.icons = l.icons.map((i) => (i.id === id ? { ...i, ...patch } : i));
   write(l);
 }
 
