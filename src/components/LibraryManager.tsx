@@ -39,12 +39,12 @@ export const LibraryManager = () => {
   };
   const saveEditEmo = () => {
     if (!editEmoId) return;
-    updateEmotion(editEmoId, {
-      emoji: editEmoEmoji.trim() || undefined,
-      label: editEmoLabel.trim() || undefined,
-    } as { emoji?: string; label?: string });
+    const patch: { emoji?: string; label?: string } = {};
+    if (editEmoEmoji.trim()) patch.emoji = editEmoEmoji.trim();
+    if (editEmoLabel.trim()) patch.label = editEmoLabel.trim();
+    updateEmotion(editEmoId, patch);
     setEditEmoId(null);
-    toast({ title: "Emotion updated" });
+    toast({ title: "Feeling updated" });
   };
   const startEditIcon = (id: string, label: string) => {
     setEditIconId(id);
