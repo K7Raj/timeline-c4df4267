@@ -497,7 +497,7 @@ const Stats = () => {
 
             {/* First / Last with random media */}
             <div className="mt-5 grid sm:grid-cols-2 gap-3">
-              <button type="button" onClick={() => openTimelineEntry(navigate, summary.first.id)} className="text-left">
+              <button type="button" onClick={() => setPreview({ kind: "memory", entry: summary.first })} className="text-left">
                 <MediaInfoCard
                   label="First memory"
                   title={summary.first.title}
@@ -506,7 +506,7 @@ const Stats = () => {
                   accent={Star}
                 />
               </button>
-              <button type="button" onClick={() => openTimelineEntry(navigate, summary.last.id)} className="text-left">
+              <button type="button" onClick={() => setPreview({ kind: "memory", entry: summary.last })} className="text-left">
                 <MediaInfoCard
                   label="Latest memory"
                   title={summary.last.title}
