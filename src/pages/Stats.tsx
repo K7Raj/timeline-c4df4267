@@ -43,6 +43,12 @@ const Stats = () => {
   const [firstMedia, setFirstMedia] = useState<{ url: string; kind: string } | null>(null);
   const [lastMedia, setLastMedia] = useState<{ url: string; kind: string } | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<TravelerPlan | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{ url: string; kind: string } | null>(null);
+
+  // Browse filter (search + time range) that drives the explorer section.
+  const [browseQuery, setBrowseQuery] = useState("");
+  const [browseRange, setBrowseRange] = useState<"all" | "30d" | "6m" | "year">("all");
 
   const reloadPlans = () => { if (user) listPlans(user.id).then(setPlans); };
 
