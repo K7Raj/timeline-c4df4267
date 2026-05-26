@@ -265,7 +265,8 @@ const BootstrapPanel = ({ onDone }: { onDone: () => void }) => {
           >
             <Input value={u} onChange={(e) => setU(e.target.value)} placeholder="Admin username" autoFocus />
             <Input value={n} onChange={(e) => setN(e.target.value)} placeholder="Display name (optional)" />
-            <Input type="password" value={p} onChange={(e) => setP(e.target.value)} placeholder="Passcode (min 4)" />
+            <Input type="password" value={p} onChange={(e) => setP(e.target.value)} placeholder="Passcode (min 4)" autoComplete="new-password" />
+            <Input type="password" value={p2} onChange={(e) => setP2(e.target.value)} placeholder="Re-enter passcode" autoComplete="new-password" />
             <div className="flex gap-2 pt-1">
               <Button type="button" variant="ghost" className="flex-1" onClick={() => setMode("choose")}>
                 Back
