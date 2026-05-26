@@ -38,9 +38,9 @@ const Login = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const user = loginWithUsername(username.trim(), passcode);
+        const user = await loginWithUsername(username.trim(), passcode);
         if (user) {
           toast.success(`Welcome ${user.profileName}`);
           navigate(user.role === "admin" ? "/admin" : "/home");
@@ -166,18 +166,23 @@ const BootstrapPanel = ({ onDone }: { onDone: () => void }) => {
   const [u, setU] = useState("");
   const [n, setN] = useState("");
   const [p, setP] = useState("");
+  const [p2, setP2] = useState("");
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const createFirstAdmin = (e: React.FormEvent) => {
+  const createFirstAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!u.trim() || p.length < 4) {
       toast.error("Username and a 4+ character passcode are required");
       return;
     }
+    if (p !== p2) {
+      toast.error("Passcodes do not match");
+      return;
+    }
     try {
-      createUser({
+      await createUser({
         username: u.trim(),
         profileName: n.trim() || u.trim(),
         passcode: p,
@@ -260,7 +265,8 @@ const BootstrapPanel = ({ onDone }: { onDone: () => void }) => {
           >
             <Input value={u} onChange={(e) => setU(e.target.value)} placeholder="Admin username" autoFocus />
             <Input value={n} onChange={(e) => setN(e.target.value)} placeholder="Display name (optional)" />
-            <Input type="password" value={p} onChange={(e) => setP(e.target.value)} placeholder="Passcode (min 4)" />
+            <Input type="password" value={p} onChange={(e) => setP(e.target.value)} placeholder="Passcode (min 4)" autoComplete="new-password" />
+            <Input type="password" value={p2} onChange={(e) => setP2(e.target.value)} placeholder="Re-enter passcode" autoComplete="new-password" />
             <div className="flex gap-2 pt-1">
               <Button type="button" variant="ghost" className="flex-1" onClick={() => setMode("choose")}>
                 Back

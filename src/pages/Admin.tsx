@@ -21,6 +21,7 @@ import {
   Eye,
   Smartphone,
   MoreHorizontal,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,27 +413,43 @@ const UserDialog = ({
   const [username, setUsername] = useState("");
   const [profileName, setProfileName] = useState("");
   const [passcode, setPasscode] = useState("");
+  const [passcode2, setPasscode2] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [role, setRole] = useState<Role>("user");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setPasscode("");
+    setPasscode2("");
+    setShowPw(false);
     if (user) {
       setUsername(user.username);
       setProfileName(user.profileName);
-      setPasscode("");
       setRole(user.role);
     } else {
       setUsername("");
       setProfileName("");
-      setPasscode("");
       setRole("user");
     }
   }, [open, user]);
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
+    if (passcode || !user) {
+      if (passcode.length < 4) {
+        toast({ title: "Passcode must be at least 4 characters", variant: "destructive" });
+        return;
+      }
+      if (passcode !== passcode2) {
+        toast({ title: "Passcodes do not match", variant: "destructive" });
+        return;
+      }
+    }
+    setSaving(true);
     try {
       if (user) {
-        updateUser(user.id, {
+        await updateUser(user.id, {
           username: username.trim(),
           profileName: profileName.trim(),
           role,
@@ -441,17 +458,17 @@ const UserDialog = ({
         toast({ title: "User updated" });
         onSaved(user);
       } else {
-        if (!username.trim() || !passcode) {
-          toast({ title: "Username and passcode are required", variant: "destructive" });
+        if (!username.trim()) {
+          toast({ title: "Username is required", variant: "destructive" });
+          setSaving(false);
           return;
         }
-        const created = createUser({
+        const created = await createUser({
           username: username.trim(),
           profileName: profileName.trim() || username.trim(),
           passcode,
           role,
         });
-        // Default-grant CRUD on the user's own memory map (read-only otherwise)
         const s = getSettings();
         s.memoryMapCrud[created.id] = { create: false, update: false, delete: false };
         s.travelerCrud[created.id] = { create: false, update: false, delete: false };
@@ -461,6 +478,8 @@ const UserDialog = ({
       }
     } catch (e) {
       toast({ title: "Save failed", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -480,10 +499,35 @@ const UserDialog = ({
             <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="e.g. Gayu Kitty" className="mt-1 rounded-xl" />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
-              Passcode {user && <span className="opacity-60">(leave blank to keep)</span>}
+            <label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span>Passcode {user && <span className="opacity-60">(leave blank to keep)</span>}</span>
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="text-[0.65rem] uppercase tracking-wider text-primary"
+              >
+                {showPw ? "Hide" : "Show"}
+              </button>
             </label>
-            <Input type="text" value={passcode} onChange={(e) => setPasscode(e.target.value)} placeholder="passcode" className="mt-1 rounded-xl" />
+            <Input
+              type={showPw ? "text" : "password"}
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              placeholder="Passcode"
+              autoComplete="new-password"
+              className="mt-1 rounded-xl"
+            />
+            <Input
+              type={showPw ? "text" : "password"}
+              value={passcode2}
+              onChange={(e) => setPasscode2(e.target.value)}
+              placeholder="Re-enter passcode"
+              autoComplete="new-password"
+              className="mt-2 rounded-xl"
+            />
+            {passcode && passcode2 && passcode !== passcode2 && (
+              <p className="text-[0.65rem] text-destructive mt-1">Passcodes do not match.</p>
+            )}
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Role</label>
@@ -491,6 +535,7 @@ const UserDialog = ({
               {(["user", "admin"] as Role[]).map((r) => (
                 <button
                   key={r}
+                  type="button"
                   onClick={() => setRole(r)}
                   className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
                     role === r
@@ -508,8 +553,8 @@ const UserDialog = ({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
-            {user ? "Save" : "Create"}
+          <Button className="bg-gradient-primary text-primary-foreground" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : user ? "Save" : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -527,23 +572,36 @@ const PasswordDialog = ({
   onSaved: (u: User | null) => void;
 }) => {
   const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [show, setShow] = useState(false);
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     setPw("");
+    setPw2("");
+    setShow(false);
   }, [user]);
 
   if (!user) return null;
 
-  const save = () => {
-    if (!pw) {
-      toast({ title: "Enter a new passcode", variant: "destructive" });
+  const save = async () => {
+    if (saving) return;
+    if (!pw || pw.length < 4) {
+      toast({ title: "Passcode must be at least 4 characters", variant: "destructive" });
       return;
     }
+    if (pw !== pw2) {
+      toast({ title: "Passcodes do not match", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
     try {
-      updateUser(user.id, { passcode: pw });
+      await updateUser(user.id, { passcode: pw });
       toast({ title: "Passcode updated" });
       onSaved(user);
     } catch (e) {
       toast({ title: "Failed", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -556,13 +614,24 @@ const PasswordDialog = ({
         <p className="text-xs text-muted-foreground">
           Set a new passcode for <span className="font-semibold text-foreground">{user.profileName}</span>.
         </p>
-        <Input value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New passcode" className="rounded-xl" autoFocus />
+        <div className="space-y-2">
+          <div className="flex items-center justify-end">
+            <button type="button" onClick={() => setShow((s) => !s)} className="text-[0.65rem] uppercase tracking-wider text-primary">
+              {show ? "Hide" : "Show"}
+            </button>
+          </div>
+          <Input type={show ? "text" : "password"} value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New passcode" autoComplete="new-password" className="rounded-xl" autoFocus />
+          <Input type={show ? "text" : "password"} value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Re-enter passcode" autoComplete="new-password" className="rounded-xl" />
+          {pw && pw2 && pw !== pw2 && (
+            <p className="text-[0.65rem] text-destructive">Passcodes do not match.</p>
+          )}
+        </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
-            Update
+          <Button className="bg-gradient-primary text-primary-foreground" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Update"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -726,31 +795,24 @@ const SettingsDialog = ({
           </SettingCard>
 
           <SettingCard icon={LayoutGrid} title="Tab names & visibility" sub="Rename any tab and choose whether it appears by default.">
-            <div className="space-y-3">
+            <div className="space-y-2">
               {TAB_KEYS.map((k) => (
-                <div key={k} className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{DEFAULT_TAB_NAMES[k]}</span>
-                    <Switch
-                      checked={s.enabledTabs[k]}
-                      onCheckedChange={(v) =>
-                        setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
-                      }
-                    />
-                  </div>
-                  <Input
-                    value={getTabLabel(s, k)}
-                    onChange={(e) =>
-                      setS({
-                        ...s,
-                        tabNames: { ...s.tabNames, [k]: e.target.value },
-                        ...(k === "rhythm" ? { rhythmName: e.target.value } : {}),
-                      })
-                    }
-                    placeholder={DEFAULT_TAB_NAMES[k]}
-                    className="rounded-xl"
-                  />
-                </div>
+                <TabRow
+                  key={k}
+                  tabKey={k}
+                  label={getTabLabel(s, k)}
+                  enabled={s.enabledTabs[k]}
+                  onToggle={(v) =>
+                    setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
+                  }
+                  onRename={(label) =>
+                    setS({
+                      ...s,
+                      tabNames: { ...s.tabNames, [k]: label },
+                      ...(k === "rhythm" ? { rhythmName: label } : {}),
+                    })
+                  }
+                />
               ))}
             </div>
           </SettingCard>
@@ -791,12 +853,90 @@ const SettingCard = ({
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="p-3 pt-1 border-t border-border/60">{children}</div>
+          <div className="p-3 pt-1 border-t border-border/60 max-w-full overflow-x-hidden">{children}</div>
         </CollapsibleContent>
       </div>
     </Collapsible>
   );
 };
+
+const TabRow = ({
+  tabKey,
+  label,
+  enabled,
+  onToggle,
+  onRename,
+}: {
+  tabKey: TabKey;
+  label: string;
+  enabled: boolean;
+  onToggle: (v: boolean) => void;
+  onRename: (label: string) => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(label);
+
+  useEffect(() => {
+    if (!editing) setDraft(label);
+  }, [label, editing]);
+
+  const commit = () => {
+    const next = draft.trim() || DEFAULT_TAB_NAMES[tabKey];
+    onRename(next);
+    setEditing(false);
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-secondary/30 p-3">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          {editing ? (
+            <Input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); commit(); }
+                if (e.key === "Escape") { setDraft(label); setEditing(false); }
+              }}
+              placeholder={DEFAULT_TAB_NAMES[tabKey]}
+              className="h-8 rounded-lg text-sm"
+            />
+          ) : (
+            <div className="min-w-0">
+              <p className="text-[0.6rem] uppercase tracking-wider text-muted-foreground">{DEFAULT_TAB_NAMES[tabKey]}</p>
+              <p className="text-sm font-medium truncate">{label}</p>
+            </div>
+          )}
+        </div>
+        {editing ? (
+          <button
+            type="button"
+            onClick={commit}
+            className="h-8 w-8 rounded-lg flex items-center justify-center bg-gradient-primary text-primary-foreground shrink-0"
+            aria-label="Save tab name"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-secondary shrink-0"
+            aria-label={`Rename ${DEFAULT_TAB_NAMES[tabKey]}`}
+            title="Rename tab"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        )}
+        <Switch checked={enabled} onCheckedChange={onToggle} />
+      </div>
+    </div>
+  );
+};
+
+
 
 
 const UserSettingsAdminDialog = ({
@@ -873,31 +1013,24 @@ const UserSettingsAdminDialog = ({
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Tab names & visibility</label>
-            <div className="mt-2 space-y-3">
+            <div className="mt-2 space-y-2">
               {TAB_KEYS.map((k) => (
-                <div key={k} className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{DEFAULT_TAB_NAMES[k]}</span>
-                    <Switch
-                      checked={s.enabledTabs[k]}
-                      onCheckedChange={(v) =>
-                        setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
-                      }
-                    />
-                  </div>
-                  <Input
-                    value={getTabLabel(s, k)}
-                    onChange={(e) =>
-                      setS({
-                        ...s,
-                        tabNames: { ...s.tabNames, [k]: e.target.value },
-                        ...(k === "rhythm" ? { rhythmName: e.target.value } : {}),
-                      })
-                    }
-                    placeholder={DEFAULT_TAB_NAMES[k]}
-                    className="rounded-xl"
-                  />
-                </div>
+                <TabRow
+                  key={k}
+                  tabKey={k}
+                  label={getTabLabel(s, k)}
+                  enabled={s.enabledTabs[k]}
+                  onToggle={(v) =>
+                    setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
+                  }
+                  onRename={(label) =>
+                    setS({
+                      ...s,
+                      tabNames: { ...s.tabNames, [k]: label },
+                      ...(k === "rhythm" ? { rhythmName: label } : {}),
+                    })
+                  }
+                />
               ))}
             </div>
           </div>

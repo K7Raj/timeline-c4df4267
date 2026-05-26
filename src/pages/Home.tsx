@@ -484,10 +484,10 @@ const PasscodeDialog = ({
   }, [open, userId]);
 
   const save = async () => {
-    const { getUser, updateUser } = await import("@/lib/auth-store");
+    const { getUser, updateUser, verifyPasscode } = await import("@/lib/auth-store");
     const u = getUser(userId);
     if (!u) return;
-    if (u.passcode !== current) {
+    if (!(await verifyPasscode(u, current))) {
       toast({ title: "Current passcode is incorrect", variant: "destructive" });
       return;
     }
@@ -500,7 +500,7 @@ const PasscodeDialog = ({
       return;
     }
     try {
-      updateUser(userId, { passcode: next });
+      await updateUser(userId, { passcode: next });
       toast({ title: "Passcode updated ✨" });
       onOpenChange(false);
     } catch (e) {
