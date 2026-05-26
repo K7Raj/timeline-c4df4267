@@ -400,7 +400,7 @@ const Stats = () => {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+            <div className="flex items-center flex-wrap gap-2">
               <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
               {(["all", "30d", "6m", "year"] as const).map((r) => (
                 <button
