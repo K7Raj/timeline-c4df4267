@@ -784,36 +784,48 @@ const CandyMap = ({
                       )}
                     </div>
                   )}
-                  {!selectMode && (canEdit || canDelete) && (
-                    <div className="flex items-center justify-end gap-1 pt-0.5">
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-lg h-7 text-xs"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            onEdit(e);
-                          }}
-                        >
-                          <Pencil className="w-3 h-3" /> Edit
-                        </Button>
-                      )}
-                      {canDelete && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="rounded-lg h-7 text-xs text-destructive hover:text-destructive"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            onDelete(e);
-                          }}
-                        >
-                          <Trash2 className="w-3 h-3" /> Delete
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                  {!selectMode && (() => {
+                    const entryCanEdit = canEditEntry(e);
+                    const entryCanDelete = canDeleteEntry(e);
+                    if (!entryCanEdit && !entryCanDelete) {
+                      // After the 10-day editing window, give a gentle hint.
+                      return (
+                        <p className="text-[0.6rem] text-muted-foreground italic pt-0.5">
+                          Edit window closed · ask admin for extended access
+                        </p>
+                      );
+                    }
+                    return (
+                      <div className="flex items-center justify-end gap-1 pt-0.5">
+                        {entryCanEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="rounded-lg h-7 text-xs"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              onEdit(e);
+                            }}
+                          >
+                            <Pencil className="w-3 h-3" /> Edit
+                          </Button>
+                        )}
+                        {entryCanDelete && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="rounded-lg h-7 text-xs text-destructive hover:text-destructive"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              onDelete(e);
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
