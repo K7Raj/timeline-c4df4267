@@ -571,23 +571,36 @@ const PasswordDialog = ({
   onSaved: (u: User | null) => void;
 }) => {
   const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [show, setShow] = useState(false);
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     setPw("");
+    setPw2("");
+    setShow(false);
   }, [user]);
 
   if (!user) return null;
 
-  const save = () => {
-    if (!pw) {
-      toast({ title: "Enter a new passcode", variant: "destructive" });
+  const save = async () => {
+    if (saving) return;
+    if (!pw || pw.length < 4) {
+      toast({ title: "Passcode must be at least 4 characters", variant: "destructive" });
       return;
     }
+    if (pw !== pw2) {
+      toast({ title: "Passcodes do not match", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
     try {
-      updateUser(user.id, { passcode: pw });
+      await updateUser(user.id, { passcode: pw });
       toast({ title: "Passcode updated" });
       onSaved(user);
     } catch (e) {
       toast({ title: "Failed", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -600,13 +613,24 @@ const PasswordDialog = ({
         <p className="text-xs text-muted-foreground">
           Set a new passcode for <span className="font-semibold text-foreground">{user.profileName}</span>.
         </p>
-        <Input value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New passcode" className="rounded-xl" autoFocus />
+        <div className="space-y-2">
+          <div className="flex items-center justify-end">
+            <button type="button" onClick={() => setShow((s) => !s)} className="text-[0.65rem] uppercase tracking-wider text-primary">
+              {show ? "Hide" : "Show"}
+            </button>
+          </div>
+          <Input type={show ? "text" : "password"} value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New passcode" autoComplete="new-password" className="rounded-xl" autoFocus />
+          <Input type={show ? "text" : "password"} value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Re-enter passcode" autoComplete="new-password" className="rounded-xl" />
+          {pw && pw2 && pw !== pw2 && (
+            <p className="text-[0.65rem] text-destructive">Passcodes do not match.</p>
+          )}
+        </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
-            Update
+          <Button className="bg-gradient-primary text-primary-foreground" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Update"}
           </Button>
         </DialogFooter>
       </DialogContent>
