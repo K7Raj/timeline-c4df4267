@@ -166,23 +166,34 @@ const Timeline = () => {
   }, [current?.id, navigate]);
 
   // Apply ?focus=ID after entries load: expand it and scroll into view.
+  // The CandyMap wrapper has absolute-positioned children (no intrinsic
+  // height), so we must scroll to the inner card button. Retry until the
+  // positioned layout is laid out (positions are computed after mount).
   useEffect(() => {
-    if (!focusId || entries.length === 0) return;
+    if (!focusId || loading || entries.length === 0) return;
     if (!entries.some((e) => e.id === focusId)) return;
     setExpandedId(focusId);
     setPulseId(focusId);
-    setTimeout(() => {
-      const el = document.querySelector<HTMLElement>(`[data-entry-id="${focusId}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 100);
-    const t = setTimeout(() => setPulseId(null), 1800);
-    // strip the param so re-renders don't re-trigger
+    let cancelled = false;
+    let attempts = 0;
+    const tryScroll = () => {
+      if (cancelled) return;
+      const wrap = document.querySelector<HTMLElement>(`[data-entry-id="${focusId}"]`);
+      const card = wrap?.querySelector<HTMLElement>("button");
+      if (card && card.getBoundingClientRect().height > 0) {
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (attempts++ < 30) {
+        requestAnimationFrame(tryScroll);
+      }
+    };
+    requestAnimationFrame(tryScroll);
+    const t = setTimeout(() => setPulseId(null), 2400);
     const next = new URLSearchParams(params);
     next.delete("focus");
     setParams(next, { replace: true });
-    return () => clearTimeout(t);
+    return () => { cancelled = true; clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusId, entries]);
+  }, [focusId, entries, loading]);
 
   // Click anywhere outside the expanded card closes it.
   useEffect(() => {
