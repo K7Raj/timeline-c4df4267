@@ -859,6 +859,84 @@ const SettingCard = ({
   );
 };
 
+const TabRow = ({
+  tabKey,
+  label,
+  enabled,
+  onToggle,
+  onRename,
+}: {
+  tabKey: TabKey;
+  label: string;
+  enabled: boolean;
+  onToggle: (v: boolean) => void;
+  onRename: (label: string) => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(label);
+
+  useEffect(() => {
+    if (!editing) setDraft(label);
+  }, [label, editing]);
+
+  const commit = () => {
+    const next = draft.trim() || DEFAULT_TAB_NAMES[tabKey];
+    onRename(next);
+    setEditing(false);
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-secondary/30 p-3">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          {editing ? (
+            <Input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); commit(); }
+                if (e.key === "Escape") { setDraft(label); setEditing(false); }
+              }}
+              placeholder={DEFAULT_TAB_NAMES[tabKey]}
+              className="h-8 rounded-lg text-sm"
+            />
+          ) : (
+            <div className="min-w-0">
+              <p className="text-[0.6rem] uppercase tracking-wider text-muted-foreground">{DEFAULT_TAB_NAMES[tabKey]}</p>
+              <p className="text-sm font-medium truncate">{label}</p>
+            </div>
+          )}
+        </div>
+        {editing ? (
+          <button
+            type="button"
+            onClick={commit}
+            className="h-8 w-8 rounded-lg flex items-center justify-center bg-gradient-primary text-primary-foreground shrink-0"
+            aria-label="Save tab name"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-secondary shrink-0"
+            aria-label={`Rename ${DEFAULT_TAB_NAMES[tabKey]}`}
+            title="Rename tab"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        )}
+        <Switch checked={enabled} onCheckedChange={onToggle} />
+      </div>
+    </div>
+  );
+};
+
+
+
 
 const UserSettingsAdminDialog = ({
   target,
