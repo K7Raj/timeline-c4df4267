@@ -563,8 +563,8 @@ const CandyMap = ({
   selected,
   onEdit,
   onDelete,
-  canEdit,
-  canDelete,
+  canEditEntry,
+  canDeleteEntry,
 }: {
   entries: TimelineEntry[];
   urls: Record<string, string>;
@@ -575,8 +575,8 @@ const CandyMap = ({
   selected: Set<string>;
   onEdit: (e: TimelineEntry) => void;
   onDelete: (e: TimelineEntry) => void;
-  canEdit: boolean;
-  canDelete: boolean;
+  canEditEntry: (e: TimelineEntry) => boolean;
+  canDeleteEntry: (e: TimelineEntry) => boolean;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(360);
