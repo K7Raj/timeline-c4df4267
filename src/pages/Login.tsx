@@ -38,9 +38,9 @@ const Login = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const user = loginWithUsername(username.trim(), passcode);
+        const user = await loginWithUsername(username.trim(), passcode);
         if (user) {
           toast.success(`Welcome ${user.profileName}`);
           navigate(user.role === "admin" ? "/admin" : "/home");
