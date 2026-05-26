@@ -166,18 +166,23 @@ const BootstrapPanel = ({ onDone }: { onDone: () => void }) => {
   const [u, setU] = useState("");
   const [n, setN] = useState("");
   const [p, setP] = useState("");
+  const [p2, setP2] = useState("");
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const createFirstAdmin = (e: React.FormEvent) => {
+  const createFirstAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!u.trim() || p.length < 4) {
       toast.error("Username and a 4+ character passcode are required");
       return;
     }
+    if (p !== p2) {
+      toast.error("Passcodes do not match");
+      return;
+    }
     try {
-      createUser({
+      await createUser({
         username: u.trim(),
         profileName: n.trim() || u.trim(),
         passcode: p,
