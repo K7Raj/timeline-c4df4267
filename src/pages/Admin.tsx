@@ -412,27 +412,43 @@ const UserDialog = ({
   const [username, setUsername] = useState("");
   const [profileName, setProfileName] = useState("");
   const [passcode, setPasscode] = useState("");
+  const [passcode2, setPasscode2] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [role, setRole] = useState<Role>("user");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setPasscode("");
+    setPasscode2("");
+    setShowPw(false);
     if (user) {
       setUsername(user.username);
       setProfileName(user.profileName);
-      setPasscode("");
       setRole(user.role);
     } else {
       setUsername("");
       setProfileName("");
-      setPasscode("");
       setRole("user");
     }
   }, [open, user]);
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
+    if (passcode || !user) {
+      if (passcode.length < 4) {
+        toast({ title: "Passcode must be at least 4 characters", variant: "destructive" });
+        return;
+      }
+      if (passcode !== passcode2) {
+        toast({ title: "Passcodes do not match", variant: "destructive" });
+        return;
+      }
+    }
+    setSaving(true);
     try {
       if (user) {
-        updateUser(user.id, {
+        await updateUser(user.id, {
           username: username.trim(),
           profileName: profileName.trim(),
           role,
@@ -441,17 +457,17 @@ const UserDialog = ({
         toast({ title: "User updated" });
         onSaved(user);
       } else {
-        if (!username.trim() || !passcode) {
-          toast({ title: "Username and passcode are required", variant: "destructive" });
+        if (!username.trim()) {
+          toast({ title: "Username is required", variant: "destructive" });
+          setSaving(false);
           return;
         }
-        const created = createUser({
+        const created = await createUser({
           username: username.trim(),
           profileName: profileName.trim() || username.trim(),
           passcode,
           role,
         });
-        // Default-grant CRUD on the user's own memory map (read-only otherwise)
         const s = getSettings();
         s.memoryMapCrud[created.id] = { create: false, update: false, delete: false };
         s.travelerCrud[created.id] = { create: false, update: false, delete: false };
@@ -461,6 +477,8 @@ const UserDialog = ({
       }
     } catch (e) {
       toast({ title: "Save failed", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -480,10 +498,35 @@ const UserDialog = ({
             <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="e.g. Gayu Kitty" className="mt-1 rounded-xl" />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
-              Passcode {user && <span className="opacity-60">(leave blank to keep)</span>}
+            <label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span>Passcode {user && <span className="opacity-60">(leave blank to keep)</span>}</span>
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="text-[0.65rem] uppercase tracking-wider text-primary"
+              >
+                {showPw ? "Hide" : "Show"}
+              </button>
             </label>
-            <Input type="text" value={passcode} onChange={(e) => setPasscode(e.target.value)} placeholder="passcode" className="mt-1 rounded-xl" />
+            <Input
+              type={showPw ? "text" : "password"}
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              placeholder="Passcode"
+              autoComplete="new-password"
+              className="mt-1 rounded-xl"
+            />
+            <Input
+              type={showPw ? "text" : "password"}
+              value={passcode2}
+              onChange={(e) => setPasscode2(e.target.value)}
+              placeholder="Re-enter passcode"
+              autoComplete="new-password"
+              className="mt-2 rounded-xl"
+            />
+            {passcode && passcode2 && passcode !== passcode2 && (
+              <p className="text-[0.65rem] text-destructive mt-1">Passcodes do not match.</p>
+            )}
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Role</label>
@@ -491,6 +534,7 @@ const UserDialog = ({
               {(["user", "admin"] as Role[]).map((r) => (
                 <button
                   key={r}
+                  type="button"
                   onClick={() => setRole(r)}
                   className={`px-3 py-2 rounded-xl text-sm font-medium border transition ${
                     role === r
@@ -508,8 +552,8 @@ const UserDialog = ({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
-            {user ? "Save" : "Create"}
+          <Button className="bg-gradient-primary text-primary-foreground" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : user ? "Save" : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>
