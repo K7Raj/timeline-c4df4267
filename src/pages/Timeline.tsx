@@ -491,8 +491,8 @@ const Timeline = () => {
             selected={selected}
             onEdit={openEdit}
             onDelete={(e) => setToDelete(e)}
-            canEdit={canEdit}
-            canDelete={canDelete}
+            canEditEntry={canEditEntry}
+            canDeleteEntry={canDeleteEntry}
           />
         )}
       </section>
