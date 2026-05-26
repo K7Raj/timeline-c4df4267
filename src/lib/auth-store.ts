@@ -94,21 +94,69 @@ export function getUserByUsername(username: string): User | null {
   );
 }
 
-export function createUser(data: {
+// ----- passcode hashing -----
+// We never persist the plaintext passcode. Each user has a random salt
+// and we store SHA-256(salt + ":" + passcode). Legacy plaintext records
+// (created before this change) are upgraded transparently on next sign-in.
+const toHex = (buf: ArrayBuffer) =>
+  Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+export function newSalt(): string {
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return toHex(arr.buffer);
+}
+
+export async function hashPasscode(passcode: string, salt: string): Promise<string> {
+  const data = new TextEncoder().encode(`${salt}:${passcode}`);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return toHex(buf);
+}
+
+export async function verifyPasscode(user: User, passcode: string): Promise<boolean> {
+  if (user.passcodeHash && user.passcodeSalt) {
+    const h = await hashPasscode(passcode, user.passcodeSalt);
+    return h === user.passcodeHash;
+  }
+  // Legacy plaintext fallback
+  return !!user.passcode && user.passcode === passcode;
+}
+
+async function upgradePasscodeIfNeeded(id: string, passcode: string) {
+  const users = listUsers();
+  const u = users.find((x) => x.id === id);
+  if (!u || (u.passcodeHash && u.passcodeSalt)) return;
+  const salt = newSalt();
+  const hash = await hashPasscode(passcode, salt);
+  save(
+    users.map((x) =>
+      x.id === id
+        ? { ...x, passcodeHash: hash, passcodeSalt: salt, passcode: undefined }
+        : x,
+    ),
+  );
+}
+
+export async function createUser(data: {
   username: string;
   profileName: string;
   passcode: string;
   role?: Role;
-}): User {
+}): Promise<User> {
   const users = listUsers();
   if (users.some((u) => u.username.toLowerCase() === data.username.toLowerCase())) {
     throw new Error("Username already exists");
   }
+  const salt = newSalt();
+  const hash = await hashPasscode(data.passcode, salt);
   const u: User = {
     id: uid(),
     username: data.username.trim(),
     profileName: data.profileName.trim() || data.username.trim(),
-    passcode: data.passcode,
+    passcodeHash: hash,
+    passcodeSalt: salt,
     role: data.role ?? "user",
     createdAt: Date.now(),
   };
@@ -117,12 +165,19 @@ export function createUser(data: {
   return u;
 }
 
-export function updateUser(
+export async function updateUser(
   id: string,
-  patch: Partial<Pick<User, "username" | "profileName" | "passcode" | "role" | "bio" | "avatarEmoji">>,
+  patch: Partial<Pick<User, "username" | "profileName" | "role" | "bio" | "avatarEmoji">> & { passcode?: string },
 ) {
   const users = listUsers();
-  const next = users.map((u) => (u.id === id ? { ...u, ...patch } : u));
+  let nextPatch: Partial<User> = { ...patch };
+  delete (nextPatch as { passcode?: string }).passcode;
+  if (patch.passcode) {
+    const salt = newSalt();
+    const hash = await hashPasscode(patch.passcode, salt);
+    nextPatch = { ...nextPatch, passcodeHash: hash, passcodeSalt: salt, passcode: undefined };
+  }
+  const next = users.map((u) => (u.id === id ? { ...u, ...nextPatch } : u));
   // Guarantee at least one admin
   if (!next.some((u) => u.role === "admin")) {
     throw new Error("At least one admin is required");
@@ -147,32 +202,38 @@ export function deleteUser(id: string) {
 }
 
 // ----- session -----
-export function login(passcode: string): User | null {
-  const user = listUsers().find((u) => u.passcode === passcode);
-  if (!user) return null;
-  sessionStorage.setItem(SESSION_KEY, user.id);
-  sessionStorage.setItem("auth", "1"); // legacy flag
-  return user;
+export async function login(passcode: string): Promise<User | null> {
+  for (const u of listUsers()) {
+    if (await verifyPasscode(u, passcode)) {
+      await upgradePasscodeIfNeeded(u.id, passcode);
+      sessionStorage.setItem(SESSION_KEY, u.id);
+      sessionStorage.setItem("auth", "1");
+      return getUser(u.id);
+    }
+  }
+  return null;
 }
 
 // Two-step login: verify passcode for a specific username.
-export function loginWithUsername(username: string, passcode: string): User | null {
+export async function loginWithUsername(username: string, passcode: string): Promise<User | null> {
   const user = getUserByUsername(username);
-  if (!user || user.passcode !== passcode) return null;
+  if (!user) return null;
+  if (!(await verifyPasscode(user, passcode))) return null;
+  await upgradePasscodeIfNeeded(user.id, passcode);
   const device = getDeviceId();
-  if (user.boundDeviceId && user.boundDeviceId !== device) {
+  const fresh = getUser(user.id)!;
+  if (fresh.boundDeviceId && fresh.boundDeviceId !== device) {
     throw new Error(
       "This account is locked to another device. Import the encrypted vault on this device to continue.",
     );
   }
-  if (!user.boundDeviceId) {
-    // First successful sign-in on this device — bind it.
+  if (!fresh.boundDeviceId) {
     const users = listUsers();
-    save(users.map((u) => (u.id === user.id ? { ...u, boundDeviceId: device } : u)));
+    save(users.map((u) => (u.id === fresh.id ? { ...u, boundDeviceId: device } : u)));
   }
-  sessionStorage.setItem(SESSION_KEY, user.id);
+  sessionStorage.setItem(SESSION_KEY, fresh.id);
   sessionStorage.setItem("auth", "1");
-  return user;
+  return getUser(fresh.id);
 }
 
 export function logout() {
