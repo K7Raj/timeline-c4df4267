@@ -934,31 +934,24 @@ const UserSettingsAdminDialog = ({
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Tab names & visibility</label>
-            <div className="mt-2 space-y-3">
+            <div className="mt-2 space-y-2">
               {TAB_KEYS.map((k) => (
-                <div key={k} className="rounded-xl border border-border bg-secondary/30 p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{DEFAULT_TAB_NAMES[k]}</span>
-                    <Switch
-                      checked={s.enabledTabs[k]}
-                      onCheckedChange={(v) =>
-                        setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
-                      }
-                    />
-                  </div>
-                  <Input
-                    value={getTabLabel(s, k)}
-                    onChange={(e) =>
-                      setS({
-                        ...s,
-                        tabNames: { ...s.tabNames, [k]: e.target.value },
-                        ...(k === "rhythm" ? { rhythmName: e.target.value } : {}),
-                      })
-                    }
-                    placeholder={DEFAULT_TAB_NAMES[k]}
-                    className="rounded-xl"
-                  />
-                </div>
+                <TabRow
+                  key={k}
+                  tabKey={k}
+                  label={getTabLabel(s, k)}
+                  enabled={s.enabledTabs[k]}
+                  onToggle={(v) =>
+                    setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
+                  }
+                  onRename={(label) =>
+                    setS({
+                      ...s,
+                      tabNames: { ...s.tabNames, [k]: label },
+                      ...(k === "rhythm" ? { rhythmName: label } : {}),
+                    })
+                  }
+                />
               ))}
             </div>
           </div>
