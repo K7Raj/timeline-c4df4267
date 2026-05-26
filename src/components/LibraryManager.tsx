@@ -167,7 +167,7 @@ export const LibraryManager = () => {
           <Input
             value={iconLabel}
             onChange={(e) => setIconLabel(e.target.value)}
-            placeholder="Icon name"
+            placeholder="Icon name (required first)"
             className="flex-1 rounded-lg"
           />
           <input
@@ -177,11 +177,19 @@ export const LibraryManager = () => {
             className="hidden"
             onChange={(e) => onPickIcon(e.target.files?.[0] ?? null)}
           />
-          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => fileRef.current?.click()}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-lg shrink-0"
+            disabled={!iconLabel.trim()}
+            onClick={() => fileRef.current?.click()}
+          >
             <Plus className="w-4 h-4" /> Upload
           </Button>
         </div>
-        <p className="text-[0.65rem] text-muted-foreground mt-1.5">PNG/SVG/WebP, ≤ 256KB. Shown across the app.</p>
+        <p className="text-[0.65rem] text-muted-foreground mt-1.5">
+          Type a name first, then upload a PNG/SVG/WebP under 256KB. Tap a pill to rename or remove.
+        </p>
       </div>
     </div>
   );
