@@ -853,7 +853,7 @@ const SettingCard = ({
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="p-3 pt-1 border-t border-border/60">{children}</div>
+          <div className="p-3 pt-1 border-t border-border/60 max-w-full overflow-x-hidden">{children}</div>
         </CollapsibleContent>
       </div>
     </Collapsible>
