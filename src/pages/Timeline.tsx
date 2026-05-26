@@ -137,10 +137,27 @@ const Timeline = () => {
   const focusId = params.get("focus");
   const targetUser = useMemo(() => getUser(targetUserId), [targetUserId]);
   const isAdmin = current?.role === "admin";
+  const isOwn = !!current && current.id === targetUserId;
   const perms = getMemoryMapPerms(current, targetUserId);
-  const canCreate = perms.create;
-  const canEdit = perms.update || perms.delete;
-  const canDelete = perms.delete;
+  // Users can create their own memories anytime. Edit/delete is allowed
+  // for 10 days from creation by default; admins can extend that
+  // permanently through Admin > Memory Map access. Admins always full CRUD.
+  const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
+  const canCreate = isAdmin || isOwn || perms.create;
+  const canEditEntry = (e: TimelineEntry) => {
+    if (isAdmin) return true;
+    if (!isOwn) return false;
+    if (perms.update) return true;
+    return Date.now() - (e.createdAt ?? e.date) <= TEN_DAYS_MS;
+  };
+  const canDeleteEntry = (e: TimelineEntry) => {
+    if (isAdmin) return true;
+    if (!isOwn) return false;
+    if (perms.delete) return true;
+    return Date.now() - (e.createdAt ?? e.date) <= TEN_DAYS_MS;
+  };
+  const canEdit = isAdmin || isOwn || perms.update || perms.delete;
+  const canDelete = isAdmin || isOwn || perms.delete;
 
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
