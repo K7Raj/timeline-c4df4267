@@ -7,7 +7,14 @@ export interface User {
   id: string;
   username: string;
   profileName: string;
-  passcode: string;
+  /**
+   * Legacy plaintext field. Kept only for backward compatibility with
+   * vaults created before passcode hashing landed. On the next successful
+   * sign-in it is upgraded to `passcodeHash` + `passcodeSalt` and removed.
+   */
+  passcode?: string;
+  passcodeHash?: string;
+  passcodeSalt?: string;
   role: Role;
   createdAt: number;
   bio?: string;
