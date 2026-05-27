@@ -208,7 +208,7 @@ const BootstrapPanel = ({ onDone }: { onDone: () => void }) => {
         await importEncryptedVault(file, pass, "replace");
       }
       toast.success("Vault imported successfully");
-      navigate("/", { replace: true });
+      onDone();
     } catch (err) {
       toast.error(String((err as Error).message));
     } finally {
