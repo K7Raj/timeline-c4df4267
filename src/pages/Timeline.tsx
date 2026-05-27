@@ -148,13 +148,13 @@ const Timeline = () => {
     if (isAdmin) return true;
     if (!isOwn) return false;
     if (perms.update) return true;
-    return Date.now() - (e.createdAt ?? e.date) <= TEN_DAYS_MS;
+    return Date.now() - e.date <= TEN_DAYS_MS;
   };
   const canDeleteEntry = (e: TimelineEntry) => {
     if (isAdmin) return true;
     if (!isOwn) return false;
     if (perms.delete) return true;
-    return Date.now() - (e.createdAt ?? e.date) <= TEN_DAYS_MS;
+    return Date.now() - e.date <= TEN_DAYS_MS;
   };
   const canEdit = isAdmin || isOwn || perms.update;
   const canDelete = isAdmin || isOwn || perms.delete;
@@ -330,7 +330,10 @@ const Timeline = () => {
   };
 
   const handleBulkDelete = async () => {
-    const ids = [...selected];
+    const ids = [...selected].filter((id) => {
+      const entry = entries.find((item) => item.id === id);
+      return entry ? canDeleteEntry(entry) : false;
+    });
     if (!ids.length) return;
     await deleteEntries(ids);
     notifyOwner(`Admin removed ${ids.length} memory item${ids.length === 1 ? "" : "s"}`);
@@ -405,7 +408,7 @@ const Timeline = () => {
               <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setShowSearch((v) => !v)} aria-label="Search">
                 <Search className="w-5 h-5" />
               </Button>
-              {canDelete && (
+              {entries.some((e) => canDeleteEntry(e)) && (
                 <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setSelectMode(true)} aria-label="Select">
                   <Square className="w-5 h-5" />
                 </Button>
