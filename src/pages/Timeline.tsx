@@ -156,7 +156,7 @@ const Timeline = () => {
     if (perms.delete) return true;
     return Date.now() - (e.createdAt ?? e.date) <= TEN_DAYS_MS;
   };
-  const canEdit = isAdmin || isOwn || perms.update || perms.delete;
+  const canEdit = isAdmin || isOwn || perms.update;
   const canDelete = isAdmin || isOwn || perms.delete;
 
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
@@ -994,7 +994,7 @@ const EntryDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="w-[min(100vw-1rem,32rem)] max-w-[32rem] max-h-[90dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{entry ? "Edit moment" : "New moment"}</DialogTitle>
         </DialogHeader>
