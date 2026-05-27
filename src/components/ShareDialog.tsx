@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Download, Upload, ShieldCheck, Loader2, Share2, KeyRound, Users } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
@@ -19,6 +20,7 @@ interface ShareDialogProps {
 }
 
 export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
+  const navigate = useNavigate();
   const [busy, setBusy] = useState<"export" | "import" | null>(null);
   const [pass, setPass] = useState("");
   const [importPass, setImportPass] = useState("");
@@ -90,8 +92,9 @@ export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
         }
         await importEncryptedVault(file, importPass, "replace");
       }
-      toast({ title: "Vault imported", description: "Reloading…" });
-      setTimeout(() => window.location.reload(), 600);
+      toast({ title: "Vault imported", description: "Vault updated successfully." });
+      onOpenChange(false);
+      navigate("/", { replace: true });
     } catch (err) {
       toast({ title: "Import failed", description: String(err), variant: "destructive" });
     } finally {

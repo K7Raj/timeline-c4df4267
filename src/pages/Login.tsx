@@ -207,8 +207,8 @@ const BootstrapPanel = ({ onDone }: { onDone: () => void }) => {
         if (pass.length < 4) throw new Error("Enter the sender's passphrase first");
         await importEncryptedVault(file, pass, "replace");
       }
-      toast.success("Vault imported — reloading…");
-      setTimeout(() => window.location.reload(), 600);
+      toast.success("Vault imported successfully");
+      onDone();
     } catch (err) {
       toast.error(String((err as Error).message));
     } finally {

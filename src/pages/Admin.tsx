@@ -839,9 +839,9 @@ const SettingCard = ({
   const [open, setOpen] = useState(!!defaultOpen);
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="rounded-xl border border-border bg-secondary/20 overflow-hidden">
+      <div className="rounded-xl border border-border bg-secondary/20 overflow-hidden max-w-full">
         <CollapsibleTrigger asChild>
-          <button type="button" className="w-full flex items-center gap-3 p-3 text-left hover:bg-secondary/40 transition">
+          <button type="button" className="w-full max-w-full flex items-center gap-3 p-3 text-left hover:bg-secondary/40 transition overflow-hidden">
             <div className="w-9 h-9 rounded-lg bg-gradient-primary/15 flex items-center justify-center shrink-0">
               <Icon className="w-4 h-4 text-primary" />
             </div>

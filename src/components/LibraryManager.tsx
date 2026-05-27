@@ -86,15 +86,15 @@ export const LibraryManager = () => {
         <p className="text-[0.65rem] text-muted-foreground mb-2">
           Each emoji + label captures how a Memory Map moment felt. Users pick from this list.
         </p>
-        <div className="flex flex-wrap gap-1.5 mb-2 min-h-[2rem]">
+        <div className="flex flex-wrap gap-1.5 mb-2 min-h-[2rem] max-w-full overflow-x-hidden">
           {lib.emotions.length === 0 && (
             <span className="text-[0.7rem] text-muted-foreground italic">No feelings yet — add the first one below.</span>
           )}
           {lib.emotions.map((e) =>
             editEmoId === e.id ? (
-              <span key={e.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background border border-primary text-xs">
-                <Input value={editEmoEmoji} onChange={(ev) => setEditEmoEmoji(ev.target.value)} className="w-10 h-7 px-1 rounded-md text-center text-base" maxLength={4} />
-                <Input value={editEmoLabel} onChange={(ev) => setEditEmoLabel(ev.target.value)} className="w-28 h-7 px-2 rounded-md text-xs" />
+              <span key={e.id} className="inline-flex max-w-full items-center gap-1 px-1.5 py-0.5 rounded-full bg-background border border-primary text-xs overflow-hidden">
+                <Input value={editEmoEmoji} onChange={(ev) => setEditEmoEmoji(ev.target.value)} className="w-10 h-7 px-1 rounded-md text-center text-base shrink-0" maxLength={4} />
+                <Input value={editEmoLabel} onChange={(ev) => setEditEmoLabel(ev.target.value)} className="w-24 sm:w-28 h-7 px-2 rounded-md text-xs min-w-0" />
                 <button type="button" onClick={saveEditEmo} className="text-primary" aria-label="Save"><Check className="w-3.5 h-3.5" /></button>
                 <button type="button" onClick={() => setEditEmoId(null)} className="text-muted-foreground" aria-label="Cancel"><XIcon className="w-3.5 h-3.5" /></button>
               </span>
@@ -137,15 +137,15 @@ export const LibraryManager = () => {
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
           <ImageIcon className="w-3.5 h-3.5 text-primary" /> Custom icons
         </p>
-        <div className="flex flex-wrap gap-1.5 mb-2 min-h-[2rem]">
+        <div className="flex flex-wrap gap-1.5 mb-2 min-h-[2rem] max-w-full overflow-x-hidden">
           {lib.icons.length === 0 && (
             <span className="text-[0.7rem] text-muted-foreground italic">No custom icons yet.</span>
           )}
           {lib.icons.map((i) =>
             editIconId === i.id ? (
-              <span key={i.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-background border border-primary text-xs">
+              <span key={i.id} className="inline-flex max-w-full items-center gap-1 px-1.5 py-0.5 rounded-full bg-background border border-primary text-xs overflow-hidden">
                 <img src={i.dataUrl} alt="" className="w-4 h-4 object-contain" />
-                <Input value={editIconLabel} onChange={(ev) => setEditIconLabel(ev.target.value)} className="w-28 h-7 px-2 rounded-md text-xs" />
+                <Input value={editIconLabel} onChange={(ev) => setEditIconLabel(ev.target.value)} className="w-24 sm:w-28 h-7 px-2 rounded-md text-xs min-w-0" />
                 <button type="button" onClick={saveEditIcon} className="text-primary" aria-label="Save"><Check className="w-3.5 h-3.5" /></button>
                 <button type="button" onClick={() => setEditIconId(null)} className="text-muted-foreground" aria-label="Cancel"><XIcon className="w-3.5 h-3.5" /></button>
               </span>
