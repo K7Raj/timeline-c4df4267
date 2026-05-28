@@ -81,6 +81,20 @@ interface Store {
   users: Record<string, Partial<AppSettings>>;
 }
 
+const defaultTimelinePerms = (): TimelineCrudPermissions => ({
+  create: false,
+  update: false,
+  delete: false,
+  pastWindowUpdate: false,
+  pastWindowDelete: false,
+});
+
+const defaultTravelerPerms = (): TravelerCrudPermissions => ({
+  create: false,
+  update: false,
+  delete: false,
+});
+
 const normalizeSettings = (input?: Partial<AppSettings>): AppSettings => {
   const tabNames: Record<TabKey, string> = {
     ...DEFAULT_TAB_NAMES,
@@ -179,6 +193,8 @@ function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
     surpriseWishes: o.surpriseWishes ?? d.surpriseWishes,
     rhythmName: o.rhythmName ?? tabNames.rhythm,
     soundEnabled: o.soundEnabled ?? d.soundEnabled,
+    birthdayDate: o.birthdayDate ?? d.birthdayDate,
+    birthdayNote: o.birthdayNote ?? d.birthdayNote,
   };
 }
 
@@ -241,17 +257,17 @@ export function useSettings(userId?: string | null) {
 
 import type { User } from "./auth-store";
 export function getMemoryMapPerms(user: User | null, targetUserId: string) {
-  if (!user) return { create: false, update: false, delete: false };
-  if (user.role === "admin") return { create: true, update: true, delete: true };
-  if (user.id !== targetUserId) return { create: false, update: false, delete: false };
+  if (!user) return defaultTimelinePerms();
+  if (user.role === "admin") return { create: true, update: true, delete: true, pastWindowUpdate: true, pastWindowDelete: true };
+  if (user.id !== targetUserId) return defaultTimelinePerms();
   const s = readStore();
-  return s.defaults.memoryMapCrud[user.id] ?? { create: false, update: false, delete: false };
+  return s.defaults.memoryMapCrud[user.id] ?? defaultTimelinePerms();
 }
 
 export function getTravelerPerms(user: User | null, targetUserId: string) {
-  if (!user) return { create: false, update: false, delete: false };
+  if (!user) return defaultTravelerPerms();
   if (user.role === "admin") return { create: true, update: true, delete: true };
-  if (user.id !== targetUserId) return { create: false, update: false, delete: false };
+  if (user.id !== targetUserId) return defaultTravelerPerms();
   const s = readStore();
-  return s.defaults.travelerCrud[user.id] ?? { create: false, update: false, delete: false };
+  return s.defaults.travelerCrud[user.id] ?? defaultTravelerPerms();
 }
