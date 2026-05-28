@@ -19,6 +19,7 @@ export interface User {
   createdAt: number;
   bio?: string;
   avatarEmoji?: string;
+  avatarUrl?: string;
   // First device this account signed in on. Once set, sign-in is
   // rejected on any other device. Sharing the underlying localStorage
   // file to a new browser/profile will fail to log in; the only
@@ -167,7 +168,7 @@ export async function createUser(data: {
 
 export async function updateUser(
   id: string,
-  patch: Partial<Pick<User, "username" | "profileName" | "role" | "bio" | "avatarEmoji">> & { passcode?: string },
+  patch: Partial<Pick<User, "username" | "profileName" | "role" | "bio" | "avatarEmoji" | "avatarUrl">> & { passcode?: string },
 ) {
   const users = listUsers();
   let nextPatch: Partial<User> = { ...patch };
