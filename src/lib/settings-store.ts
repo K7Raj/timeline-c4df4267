@@ -11,16 +11,32 @@
 
 export type TabKey = "timeline" | "stats" | "traveler" | "surprise" | "media" | "wish" | "rhythm";
 
+export interface TimelineCrudPermissions {
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  pastWindowUpdate: boolean;
+  pastWindowDelete: boolean;
+}
+
+export interface TravelerCrudPermissions {
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
 export interface AppSettings {
   welcomeHeading: string;
   quotes: string[];
   enabledTabs: Record<TabKey, boolean>;
   tabNames: Record<TabKey, string>;
-  memoryMapCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
-  travelerCrud: Record<string, { create: boolean; update: boolean; delete: boolean }>;
+  memoryMapCrud: Record<string, TimelineCrudPermissions>;
+  travelerCrud: Record<string, TravelerCrudPermissions>;
   surpriseWishes: string[];
   rhythmName: string;
   soundEnabled: boolean;
+  birthdayDate?: string;
+  birthdayNote?: string;
 }
 
 const KEY = "app-settings-v2";
@@ -56,6 +72,8 @@ const defaults: AppSettings = {
   ],
   rhythmName: DEFAULT_TAB_NAMES.rhythm,
   soundEnabled: true,
+  birthdayDate: "",
+  birthdayNote: "Happy Birthday {name} ✨",
 };
 
 interface Store {
@@ -75,9 +93,31 @@ const normalizeSettings = (input?: Partial<AppSettings>): AppSettings => {
     ...input,
     enabledTabs: { ...defaults.enabledTabs, ...(input?.enabledTabs ?? {}) },
     tabNames,
-    memoryMapCrud: { ...(input?.memoryMapCrud ?? {}) },
-    travelerCrud: { ...(input?.travelerCrud ?? {}) },
+    memoryMapCrud: Object.fromEntries(
+      Object.entries(input?.memoryMapCrud ?? {}).map(([userId, perms]) => [
+        userId,
+        {
+          create: perms.create ?? false,
+          update: perms.update ?? false,
+          delete: perms.delete ?? false,
+          pastWindowUpdate: perms.pastWindowUpdate ?? false,
+          pastWindowDelete: perms.pastWindowDelete ?? false,
+        } satisfies TimelineCrudPermissions,
+      ]),
+    ),
+    travelerCrud: Object.fromEntries(
+      Object.entries(input?.travelerCrud ?? {}).map(([userId, perms]) => [
+        userId,
+        {
+          create: perms.create ?? false,
+          update: perms.update ?? false,
+          delete: perms.delete ?? false,
+        } satisfies TravelerCrudPermissions,
+      ]),
+    ),
     rhythmName: input?.rhythmName ?? tabNames.rhythm,
+    birthdayDate: input?.birthdayDate ?? defaults.birthdayDate,
+    birthdayNote: input?.birthdayNote ?? defaults.birthdayNote,
   };
 };
 
