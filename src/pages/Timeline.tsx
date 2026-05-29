@@ -147,14 +147,16 @@ const Timeline = () => {
   const canEditEntry = (e: TimelineEntry) => {
     if (isAdmin) return true;
     if (!isOwn) return false;
-    if (perms.update) return true;
-    return Date.now() - e.date <= TEN_DAYS_MS;
+    if (!perms.update) return false;
+    const isOld = Date.now() - e.date > TEN_DAYS_MS;
+    return isOld ? perms.pastWindowUpdate : true;
   };
   const canDeleteEntry = (e: TimelineEntry) => {
     if (isAdmin) return true;
     if (!isOwn) return false;
-    if (perms.delete) return true;
-    return Date.now() - e.date <= TEN_DAYS_MS;
+    if (!perms.delete) return false;
+    const isOld = Date.now() - e.date > TEN_DAYS_MS;
+    return isOld ? perms.pastWindowDelete : true;
   };
   const canEdit = isAdmin || isOwn || perms.update;
   const canDelete = isAdmin || isOwn || perms.delete;
