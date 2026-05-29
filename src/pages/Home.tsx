@@ -374,8 +374,14 @@ const Drawer = ({
         onClick={onOpenProfile}
         className="px-5 py-4 border-b border-border flex items-center gap-3 hover:bg-secondary/40 transition text-left"
       >
-        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
-          {user?.avatarEmoji ? <span className="text-2xl leading-none">{user.avatarEmoji}</span> : initial}
+        <div className="relative w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0 overflow-hidden">
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ) : user?.avatarEmoji ? (
+            <span className="text-2xl leading-none">{user.avatarEmoji}</span>
+          ) : (
+            initial
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-semibold truncate">{user?.profileName ?? "User"}</p>
