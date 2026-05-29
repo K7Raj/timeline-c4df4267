@@ -548,7 +548,28 @@ const PasscodeDialog = ({
   );
 };
 
+// Compute birthday status from a "YYYY-MM-DD" or "MM-DD" string.
+function useBirthday(dateStr?: string) {
+  if (!dateStr) return null;
+  const parts = dateStr.split("-").map((p) => parseInt(p, 10));
+  if (parts.length < 2 || parts.some((n) => Number.isNaN(n))) return null;
+  const [, monthA, dayA] = parts.length === 3 ? parts : [0, parts[0], parts[1]];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const month = monthA - 1;
+  const day = dayA;
+  let next = new Date(today.getFullYear(), month, day);
+  if (next.getTime() < today.getTime()) {
+    next = new Date(today.getFullYear() + 1, month, day);
+  }
+  const isToday =
+    today.getMonth() === month && today.getDate() === day;
+  const daysLeft = isToday ? 0 : Math.round((next.getTime() - today.getTime()) / 86400000);
+  return { isToday, daysLeft } as { isToday: boolean; daysLeft: number | null };
+}
+
 export default Home;
+
 
 // Insta-like profile sheet: edit display name, avatar emoji and bio.
 const ProfileDialog = ({
