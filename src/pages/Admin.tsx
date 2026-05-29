@@ -83,7 +83,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library } from "lucide-react";
+import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library, Cake, Upload } from "lucide-react";
 import { FolderLock, Save } from "lucide-react";
 import {
   clearBackupFolder,
