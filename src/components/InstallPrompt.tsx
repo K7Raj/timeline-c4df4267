@@ -80,7 +80,7 @@ export const InstallPrompt = () => {
         <Download className="w-5 h-5 text-primary-foreground" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold leading-tight">Install Surprise</p>
+        <p className="text-sm font-semibold leading-tight">Install Timeline</p>
         <p className="text-[0.7rem] text-muted-foreground leading-tight">
           {isPreviewHost ? "Open the published app, then install it on your phone." : "Add to your home screen for a native-app feel."}
         </p>

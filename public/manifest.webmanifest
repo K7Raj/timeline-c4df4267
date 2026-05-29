@@ -1,6 +1,6 @@
 {
-  "name": "Surprise",
-  "short_name": "Surprise",
+  "name": "Timeline",
+  "short_name": "Timeline",
   "description": "Your private vault for memories, moments, and surprises.",
   "start_url": "/",
   "scope": "/",
