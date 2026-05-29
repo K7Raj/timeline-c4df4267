@@ -1286,3 +1286,96 @@ const TravelerPermsDialog = ({
   );
 };
 
+
+interface BulkRow {
+  date: string;
+  endDate?: string;
+  title: string;
+  content?: string;
+  location?: string;
+  enjoyment?: number;
+  iconKey?: string;
+}
+
+const BulkTimelineImport = ({ users }: { users: User[] }) => {
+  const eligible = users.filter((u) => u.role === "user");
+  const [targetId, setTargetId] = useState<string>(eligible[0]?.id ?? "");
+  const [busy, setBusy] = useState(false);
+  const fileRef = useState<HTMLInputElement | null>(null as HTMLInputElement | null);
+
+  const downloadSample = () => {
+    const a = document.createElement("a");
+    a.href = "/timeline-sample.json";
+    a.download = "timeline-sample.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const onFile: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !targetId) return;
+    setBusy(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error("File must be a JSON array");
+      const { createEntry } = await import("@/lib/timeline-store");
+      let added = 0;
+      for (const raw of data as BulkRow[]) {
+        if (!raw?.date || !raw?.title) continue;
+        const date = new Date(raw.date).getTime();
+        if (Number.isNaN(date)) continue;
+        const endDate = raw.endDate ? new Date(raw.endDate).getTime() : undefined;
+        await createEntry(targetId, {
+          date,
+          endDate: endDate && !Number.isNaN(endDate) ? endDate : undefined,
+          title: String(raw.title),
+          content: String(raw.content ?? ""),
+          location: raw.location,
+          enjoyment: typeof raw.enjoyment === "number" ? raw.enjoyment : undefined,
+          iconKey: raw.iconKey,
+        });
+        added += 1;
+      }
+      pushNotice(targetId, `Admin imported ${added} memory map entries for you ✨`);
+      toast({ title: `Imported ${added} entries` });
+    } catch (err) {
+      toast({ title: "Import failed", description: String((err as Error).message), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (eligible.length === 0) {
+    return <p className="text-xs text-muted-foreground">No non-admin users yet.</p>;
+  }
+
+  return (
+    <div className="space-y-2 text-xs">
+      <label className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">Target user</label>
+      <select
+        value={targetId}
+        onChange={(e) => setTargetId(e.target.value)}
+        className="w-full rounded-xl border border-border bg-background px-3 h-10 text-sm"
+      >
+        {eligible.map((u) => (
+          <option key={u.id} value={u.id}>{u.profileName} (@{u.username})</option>
+        ))}
+      </select>
+      <div className="flex gap-2">
+        <Button type="button" size="sm" variant="secondary" className="rounded-lg flex-1" onClick={downloadSample}>
+          Download sample
+        </Button>
+        <label className={`flex-1 inline-flex items-center justify-center gap-1 rounded-lg h-9 px-3 text-sm font-medium cursor-pointer bg-gradient-primary text-primary-foreground ${busy ? "opacity-60 pointer-events-none" : ""}`}>
+          <Upload className="w-3.5 h-3.5" /> {busy ? "Importing…" : "Choose JSON"}
+          <input type="file" accept="application/json,.json" className="hidden" onChange={onFile} disabled={busy} />
+        </label>
+      </div>
+      <p className="text-[0.65rem] text-muted-foreground leading-relaxed">
+        Required per row: <code>date</code> (YYYY-MM-DD), <code>title</code>. Optional: <code>endDate</code>, <code>content</code>, <code>location</code>, <code>enjoyment</code> (1–5), <code>iconKey</code> (e.g. <code>lucide:Heart</code> or <code>emoji:🎂</code>).
+      </p>
+    </div>
+  );
+};
