@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import React, { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Shield,
@@ -83,7 +83,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library } from "lucide-react";
+import { ChevronDown, Type, Quote, Wand2, Volume2, LayoutGrid, Library, Cake, Upload } from "lucide-react";
 import { FolderLock, Save } from "lucide-react";
 import {
   clearBackupFolder,
@@ -687,6 +687,29 @@ const PermsDialog = ({
               />
             </label>
           ))}
+          <div className="pt-2 pb-1">
+            <p className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">
+              Past-window override (10+ days old)
+            </p>
+            <p className="text-[0.65rem] text-muted-foreground/80 leading-snug">
+              By default users cannot edit/delete memories dated 10+ days in the past. Toggle on to grant override.
+            </p>
+          </div>
+          {([
+            ["pastWindowUpdate", "Allow edit of old entries"],
+            ["pastWindowDelete", "Allow delete of old entries"],
+          ] as const).map(([k, label]) => (
+            <label
+              key={k}
+              className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30"
+            >
+              <span className="text-sm">{label}</span>
+              <Switch
+                checked={perms[k]}
+                onCheckedChange={(v) => setPerms((p) => ({ ...p, [k]: v }))}
+              />
+            </label>
+          ))}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -792,6 +815,28 @@ const SettingsDialog = ({
 
           <SettingCard icon={Library} title="Custom library" sub="Emotions & icons used across the app.">
             <LibraryManager />
+          </SettingCard>
+
+          <SettingCard icon={Cake} title="Birthday (global default)" sub="MM-DD or YYYY-MM-DD. Use {name} in the note.">
+            <div className="grid gap-2">
+              <Input
+                type="text"
+                placeholder="e.g. 04-21 or 1996-04-21"
+                value={s.birthdayDate ?? ""}
+                onChange={(e) => setS({ ...s, birthdayDate: e.target.value })}
+                className="rounded-xl"
+              />
+              <Input
+                placeholder="Happy Birthday {name} ✨"
+                value={s.birthdayNote ?? ""}
+                onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+          </SettingCard>
+
+          <SettingCard icon={Upload} title="Bulk import timeline" sub="Upload a JSON array of memories for a chosen user.">
+            <BulkTimelineImport users={users} />
           </SettingCard>
 
           <SettingCard icon={LayoutGrid} title="Tab names & visibility" sub="Rename any tab and choose whether it appears by default.">
@@ -962,6 +1007,8 @@ const UserSettingsAdminDialog = ({
       tabNames: s.tabNames,
       surpriseWishes: s.surpriseWishes,
       rhythmName: s.rhythmName,
+      birthdayDate: s.birthdayDate,
+      birthdayNote: s.birthdayNote,
     });
     pushNotice(target.id, "Admin updated your personal settings");
     toast({ title: `Settings saved for ${target.profileName}` });
@@ -1010,6 +1057,26 @@ const UserSettingsAdminDialog = ({
               }
               className="mt-1 rounded-xl resize-none font-mono text-xs"
             />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Birthday (MM-DD or YYYY-MM-DD)</label>
+              <Input
+                value={s.birthdayDate ?? ""}
+                onChange={(e) => setS({ ...s, birthdayDate: e.target.value })}
+                placeholder="04-21"
+                className="mt-1 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Birthday note</label>
+              <Input
+                value={s.birthdayNote ?? ""}
+                onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
+                placeholder="Happy Birthday {name} ✨"
+                className="mt-1 rounded-xl"
+              />
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Tab names & visibility</label>
@@ -1241,3 +1308,96 @@ const TravelerPermsDialog = ({
   );
 };
 
+
+interface BulkRow {
+  date: string;
+  endDate?: string;
+  title: string;
+  content?: string;
+  location?: string;
+  enjoyment?: number;
+  iconKey?: string;
+}
+
+const BulkTimelineImport = ({ users }: { users: User[] }) => {
+  const eligible = users.filter((u) => u.role === "user");
+  const [targetId, setTargetId] = useState<string>(eligible[0]?.id ?? "");
+  const [busy, setBusy] = useState(false);
+  
+
+  const downloadSample = () => {
+    const a = document.createElement("a");
+    a.href = "/timeline-sample.json";
+    a.download = "timeline-sample.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !targetId) return;
+    setBusy(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error("File must be a JSON array");
+      const { createEntry } = await import("@/lib/timeline-store");
+      let added = 0;
+      for (const raw of data as BulkRow[]) {
+        if (!raw?.date || !raw?.title) continue;
+        const date = new Date(raw.date).getTime();
+        if (Number.isNaN(date)) continue;
+        const endDate = raw.endDate ? new Date(raw.endDate).getTime() : undefined;
+        await createEntry(targetId, {
+          date,
+          endDate: endDate && !Number.isNaN(endDate) ? endDate : undefined,
+          title: String(raw.title),
+          content: String(raw.content ?? ""),
+          location: raw.location,
+          enjoyment: typeof raw.enjoyment === "number" ? raw.enjoyment : undefined,
+          iconKey: raw.iconKey,
+        });
+        added += 1;
+      }
+      pushNotice(targetId, `Admin imported ${added} memory map entries for you ✨`);
+      toast({ title: `Imported ${added} entries` });
+    } catch (err) {
+      toast({ title: "Import failed", description: String((err as Error).message), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (eligible.length === 0) {
+    return <p className="text-xs text-muted-foreground">No non-admin users yet.</p>;
+  }
+
+  return (
+    <div className="space-y-2 text-xs">
+      <label className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">Target user</label>
+      <select
+        value={targetId}
+        onChange={(e) => setTargetId(e.target.value)}
+        className="w-full rounded-xl border border-border bg-background px-3 h-10 text-sm"
+      >
+        {eligible.map((u) => (
+          <option key={u.id} value={u.id}>{u.profileName} (@{u.username})</option>
+        ))}
+      </select>
+      <div className="flex gap-2">
+        <Button type="button" size="sm" variant="secondary" className="rounded-lg flex-1" onClick={downloadSample}>
+          Download sample
+        </Button>
+        <label className={`flex-1 inline-flex items-center justify-center gap-1 rounded-lg h-9 px-3 text-sm font-medium cursor-pointer bg-gradient-primary text-primary-foreground ${busy ? "opacity-60 pointer-events-none" : ""}`}>
+          <Upload className="w-3.5 h-3.5" /> {busy ? "Importing…" : "Choose JSON"}
+          <input type="file" accept="application/json,.json" className="hidden" onChange={onFile} disabled={busy} />
+        </label>
+      </div>
+      <p className="text-[0.65rem] text-muted-foreground leading-relaxed">
+        Required per row: <code>date</code> (YYYY-MM-DD), <code>title</code>. Optional: <code>endDate</code>, <code>content</code>, <code>location</code>, <code>enjoyment</code> (1–5), <code>iconKey</code> (e.g. <code>lucide:Heart</code> or <code>emoji:🎂</code>).
+      </p>
+    </div>
+  );
+};

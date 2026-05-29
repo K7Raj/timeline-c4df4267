@@ -263,6 +263,32 @@ const Home = () => {
           </h2>
         </div>
 
+        {/* Birthday banner */}
+        {(() => {
+          const bday = useBirthday(settings.birthdayDate);
+          if (!bday) return null;
+          const note = (settings.birthdayNote ?? "Happy Birthday {name} ✨").replace(
+            "{name}",
+            user?.profileName ?? user?.username ?? "you",
+          );
+          if (bday.isToday) {
+            return (
+              <div className="mb-6 bg-gradient-primary border border-primary/40 rounded-2xl p-4 shadow-glow text-center">
+                <p className="text-2xl">🎂🎉</p>
+                <p className="mt-1 text-base font-bold text-primary-foreground">{note}</p>
+              </div>
+            );
+          }
+          return (
+            <div className="mb-6 bg-gradient-card border border-border rounded-2xl p-3 flex items-center gap-3 shadow-elegant">
+              <span className="text-2xl">🎈</span>
+              <p className="text-sm">
+                <span className="font-semibold">{bday.daysLeft}</span> day{bday.daysLeft === 1 ? "" : "s"} to your birthday
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Quotes */}
         {settings.quotes.length > 0 && (
           <div className="mb-6 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
@@ -348,8 +374,14 @@ const Drawer = ({
         onClick={onOpenProfile}
         className="px-5 py-4 border-b border-border flex items-center gap-3 hover:bg-secondary/40 transition text-left"
       >
-        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
-          {user?.avatarEmoji ? <span className="text-2xl leading-none">{user.avatarEmoji}</span> : initial}
+        <div className="relative w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0 overflow-hidden">
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ) : user?.avatarEmoji ? (
+            <span className="text-2xl leading-none">{user.avatarEmoji}</span>
+          ) : (
+            initial
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-semibold truncate">{user?.profileName ?? "User"}</p>
@@ -548,7 +580,28 @@ const PasscodeDialog = ({
   );
 };
 
+// Compute birthday status from a "YYYY-MM-DD" or "MM-DD" string.
+function useBirthday(dateStr?: string) {
+  if (!dateStr) return null;
+  const parts = dateStr.split("-").map((p) => parseInt(p, 10));
+  if (parts.length < 2 || parts.some((n) => Number.isNaN(n))) return null;
+  const [, monthA, dayA] = parts.length === 3 ? parts : [0, parts[0], parts[1]];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const month = monthA - 1;
+  const day = dayA;
+  let next = new Date(today.getFullYear(), month, day);
+  if (next.getTime() < today.getTime()) {
+    next = new Date(today.getFullYear() + 1, month, day);
+  }
+  const isToday =
+    today.getMonth() === month && today.getDate() === day;
+  const daysLeft = isToday ? 0 : Math.round((next.getTime() - today.getTime()) / 86400000);
+  return { isToday, daysLeft } as { isToday: boolean; daysLeft: number | null };
+}
+
 export default Home;
+
 
 // Insta-like profile sheet: edit display name, avatar emoji and bio.
 const ProfileDialog = ({
@@ -563,8 +616,11 @@ const ProfileDialog = ({
   const [profileName, setProfileName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarEmoji, setAvatarEmoji] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const [edit, setEdit] = useState(false);
   const u = getAuthUser(userId);
+  const settings = useSettings(userId);
+  const bday = useBirthday(settings.birthdayDate);
 
   useEffect(() => {
     if (open) {
@@ -572,6 +628,7 @@ const ProfileDialog = ({
       setProfileName(fresh?.profileName ?? "");
       setBio(fresh?.bio ?? "");
       setAvatarEmoji(fresh?.avatarEmoji ?? "");
+      setAvatarUrl(fresh?.avatarUrl);
       setEdit(false);
     }
   }, [open, userId]);
@@ -583,6 +640,17 @@ const ProfileDialog = ({
     day: "2-digit", month: "long", year: "numeric",
   });
 
+  const onPickAvatar = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Pick an image under 2 MB", variant: "destructive" });
+      return;
+    }
+    const { fileToDataUrl } = await import("@/lib/avatar");
+    const url = await fileToDataUrl(file);
+    setAvatarUrl(url);
+  };
+
   const save = () => {
     if (!profileName.trim()) {
       toast({ title: "Profile name can't be empty", variant: "destructive" });
@@ -593,6 +661,7 @@ const ProfileDialog = ({
         profileName: profileName.trim(),
         bio: bio.trim() || undefined,
         avatarEmoji: avatarEmoji.trim() || undefined,
+        avatarUrl: avatarUrl || undefined,
       });
       toast({ title: "Profile updated ✨" });
       setEdit(false);
@@ -614,13 +683,47 @@ const ProfileDialog = ({
         </DialogHeader>
 
         <div className="flex flex-col items-center text-center gap-2 pt-2">
-          <div className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-glow">
-            {avatarEmoji ? <span className="leading-none">{avatarEmoji}</span> : initial}
+          <div className="relative w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-glow overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="avatar" className="absolute inset-0 w-full h-full object-cover" />
+            ) : avatarEmoji ? (
+              <span className="leading-none">{avatarEmoji}</span>
+            ) : (
+              initial
+            )}
           </div>
+          {edit && (
+            <label className="text-[0.65rem] text-primary cursor-pointer hover:underline">
+              {avatarUrl ? "Change photo" : "Upload photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          )}
+          {edit && avatarUrl && (
+            <button
+              type="button"
+              onClick={() => setAvatarUrl(undefined)}
+              className="text-[0.65rem] text-destructive hover:underline"
+            >
+              Remove photo
+            </button>
+          )}
           {!edit && (
             <>
               <p className="font-semibold text-base mt-1">{u.profileName}</p>
               <p className="text-xs text-muted-foreground">@{u.username} · {u.role}</p>
+              {bday?.isToday && (
+                <p className="mt-2 text-xs font-semibold text-primary">🎂 Happy birthday today!</p>
+              )}
+              {bday && !bday.isToday && bday.daysLeft !== null && (
+                <p className="mt-2 text-[0.7rem] text-muted-foreground">
+                  🎈 Birthday in {bday.daysLeft} day{bday.daysLeft === 1 ? "" : "s"}
+                </p>
+              )}
               {u.bio && <p className="text-xs mt-2 px-2 text-foreground/90 whitespace-pre-wrap">{u.bio}</p>}
               <p className="text-[0.65rem] text-muted-foreground mt-2 flex items-center gap-1">
                 <CalendarDays className="w-3 h-3" /> Joined {joined}
@@ -632,7 +735,7 @@ const ProfileDialog = ({
         {edit && (
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Avatar emoji (optional)</label>
+              <label className="text-xs font-medium text-muted-foreground">Avatar emoji (used if no photo)</label>
               <Input
                 value={avatarEmoji}
                 onChange={(e) => setAvatarEmoji(e.target.value)}

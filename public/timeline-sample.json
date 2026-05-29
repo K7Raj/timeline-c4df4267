@@ -1,0 +1,26 @@
+[
+  {
+    "date": "2025-08-27",
+    "title": "Reception Day",
+    "content": "Reception ceremony celebrated with family and friends.",
+    "location": "Chennai",
+    "enjoyment": 5,
+    "iconKey": "lucide:Heart"
+  },
+  {
+    "date": "2025-09-04",
+    "endDate": "2025-09-06",
+    "title": "Honeymoon Trip",
+    "content": "Madurai → Alapuzha → Vagamon → Thekkady → Kumily.",
+    "location": "Kerala",
+    "enjoyment": 5,
+    "iconKey": "lucide:Plane"
+  },
+  {
+    "date": "2025-12-25",
+    "title": "Pondicherry Bike Trip",
+    "content": "Auroville, Marina, Pichavaram & cafes.",
+    "enjoyment": 4,
+    "iconKey": "emoji:🛵"
+  }
+]

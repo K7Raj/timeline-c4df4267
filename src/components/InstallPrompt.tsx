@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, X } from "lucide-react";
+import { Download, X, Share } from "lucide-react";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -7,16 +7,11 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const DISMISS_KEY = "pwa-install-dismissed-at";
-const COOLDOWN_MS = 7 * 86400000;
+const COOLDOWN_MS = 3 * 86400000;
 
-/**
- * Lightweight install banner. Shows once the browser fires the
- * `beforeinstallprompt` event (Chromium / Android). On iOS Safari the
- * event never fires, so users install via Share → Add to Home Screen
- * (we don't show a banner there to avoid noise).
- */
 export const InstallPrompt = () => {
   const [evt, setEvt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [iosVisible, setIosVisible] = useState(false);
   const [hidden, setHidden] = useState(false);
   const isPreviewHost = useMemo(
     () =>
@@ -45,6 +40,14 @@ export const InstallPrompt = () => {
       return;
     }
 
+    const ua = navigator.userAgent || "";
+    const isIos = /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
+    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+    if (isIos && isSafari) {
+      // Safari iOS does not fire beforeinstallprompt — show instructions.
+      setIosVisible(true);
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setEvt(e as BeforeInstallPromptEvent);
@@ -53,16 +56,18 @@ export const InstallPrompt = () => {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, [isPreviewHost]);
 
-  if (!evt || hidden) return null;
+  if ((!evt && !iosVisible) || hidden) return null;
 
   const install = async () => {
     try {
-      if (isPreviewHost) {
+      if (isPreviewHost && evt) {
         setHidden(true);
         return;
       }
-      await evt.prompt();
-      await evt.userChoice;
+      if (evt) {
+        await evt.prompt();
+        await evt.userChoice;
+      }
     } finally {
       setHidden(true);
       setEvt(null);
@@ -82,16 +87,22 @@ export const InstallPrompt = () => {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold leading-tight">Install Timeline</p>
         <p className="text-[0.7rem] text-muted-foreground leading-tight">
-          {isPreviewHost ? "Open the published app, then install it on your phone." : "Add to your home screen for a native-app feel."}
+          {isPreviewHost
+            ? "Open the published app, then install it on your phone."
+            : iosVisible && !evt
+              ? <span className="inline-flex items-center gap-1">Tap <Share className="w-3 h-3" /> then "Add to Home Screen".</span>
+              : "Add to your home screen for a native-app feel."}
         </p>
       </div>
-      <button
-        type="button"
-        onClick={install}
-        className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-primary text-primary-foreground text-xs font-semibold"
-      >
-        {isPreviewHost ? "Open app" : "Install"}
-      </button>
+      {(evt || isPreviewHost) && (
+        <button
+          type="button"
+          onClick={install}
+          className="shrink-0 px-3 py-1.5 rounded-lg bg-gradient-primary text-primary-foreground text-xs font-semibold"
+        >
+          {isPreviewHost ? "Open app" : "Install"}
+        </button>
+      )}
       <button
         type="button"
         onClick={dismiss}
