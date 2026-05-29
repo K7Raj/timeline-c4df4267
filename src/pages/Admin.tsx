@@ -817,6 +817,28 @@ const SettingsDialog = ({
             <LibraryManager />
           </SettingCard>
 
+          <SettingCard icon={Cake} title="Birthday (global default)" sub="MM-DD or YYYY-MM-DD. Use {name} in the note.">
+            <div className="grid gap-2">
+              <Input
+                type="text"
+                placeholder="e.g. 04-21 or 1996-04-21"
+                value={s.birthdayDate ?? ""}
+                onChange={(e) => setS({ ...s, birthdayDate: e.target.value })}
+                className="rounded-xl"
+              />
+              <Input
+                placeholder="Happy Birthday {name} ✨"
+                value={s.birthdayNote ?? ""}
+                onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+          </SettingCard>
+
+          <SettingCard icon={Upload} title="Bulk import timeline" sub="Upload a JSON array of memories for a chosen user.">
+            <BulkTimelineImport users={users} />
+          </SettingCard>
+
           <SettingCard icon={LayoutGrid} title="Tab names & visibility" sub="Rename any tab and choose whether it appears by default.">
             <div className="space-y-2">
               {TAB_KEYS.map((k) => (
