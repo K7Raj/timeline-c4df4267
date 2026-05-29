@@ -1007,6 +1007,8 @@ const UserSettingsAdminDialog = ({
       tabNames: s.tabNames,
       surpriseWishes: s.surpriseWishes,
       rhythmName: s.rhythmName,
+      birthdayDate: s.birthdayDate,
+      birthdayNote: s.birthdayNote,
     });
     pushNotice(target.id, "Admin updated your personal settings");
     toast({ title: `Settings saved for ${target.profileName}` });
