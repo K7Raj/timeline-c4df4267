@@ -630,13 +630,47 @@ const ProfileDialog = ({
         </DialogHeader>
 
         <div className="flex flex-col items-center text-center gap-2 pt-2">
-          <div className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-glow">
-            {avatarEmoji ? <span className="leading-none">{avatarEmoji}</span> : initial}
+          <div className="relative w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-glow overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="avatar" className="absolute inset-0 w-full h-full object-cover" />
+            ) : avatarEmoji ? (
+              <span className="leading-none">{avatarEmoji}</span>
+            ) : (
+              initial
+            )}
           </div>
+          {edit && (
+            <label className="text-[0.65rem] text-primary cursor-pointer hover:underline">
+              {avatarUrl ? "Change photo" : "Upload photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          )}
+          {edit && avatarUrl && (
+            <button
+              type="button"
+              onClick={() => setAvatarUrl(undefined)}
+              className="text-[0.65rem] text-destructive hover:underline"
+            >
+              Remove photo
+            </button>
+          )}
           {!edit && (
             <>
               <p className="font-semibold text-base mt-1">{u.profileName}</p>
               <p className="text-xs text-muted-foreground">@{u.username} · {u.role}</p>
+              {bday?.isToday && (
+                <p className="mt-2 text-xs font-semibold text-primary">🎂 Happy birthday today!</p>
+              )}
+              {bday && !bday.isToday && bday.daysLeft !== null && (
+                <p className="mt-2 text-[0.7rem] text-muted-foreground">
+                  🎈 Birthday in {bday.daysLeft} day{bday.daysLeft === 1 ? "" : "s"}
+                </p>
+              )}
               {u.bio && <p className="text-xs mt-2 px-2 text-foreground/90 whitespace-pre-wrap">{u.bio}</p>}
               <p className="text-[0.65rem] text-muted-foreground mt-2 flex items-center gap-1">
                 <CalendarDays className="w-3 h-3" /> Joined {joined}
@@ -648,7 +682,7 @@ const ProfileDialog = ({
         {edit && (
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Avatar emoji (optional)</label>
+              <label className="text-xs font-medium text-muted-foreground">Avatar emoji (used if no photo)</label>
               <Input
                 value={avatarEmoji}
                 onChange={(e) => setAvatarEmoji(e.target.value)}
