@@ -563,8 +563,11 @@ const ProfileDialog = ({
   const [profileName, setProfileName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarEmoji, setAvatarEmoji] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const [edit, setEdit] = useState(false);
   const u = getAuthUser(userId);
+  const settings = useSettings(userId);
+  const bday = useBirthday(settings.birthdayDate);
 
   useEffect(() => {
     if (open) {
@@ -572,6 +575,7 @@ const ProfileDialog = ({
       setProfileName(fresh?.profileName ?? "");
       setBio(fresh?.bio ?? "");
       setAvatarEmoji(fresh?.avatarEmoji ?? "");
+      setAvatarUrl(fresh?.avatarUrl);
       setEdit(false);
     }
   }, [open, userId]);
@@ -583,6 +587,17 @@ const ProfileDialog = ({
     day: "2-digit", month: "long", year: "numeric",
   });
 
+  const onPickAvatar = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Pick an image under 2 MB", variant: "destructive" });
+      return;
+    }
+    const { fileToDataUrl } = await import("@/lib/avatar");
+    const url = await fileToDataUrl(file);
+    setAvatarUrl(url);
+  };
+
   const save = () => {
     if (!profileName.trim()) {
       toast({ title: "Profile name can't be empty", variant: "destructive" });
@@ -593,6 +608,7 @@ const ProfileDialog = ({
         profileName: profileName.trim(),
         bio: bio.trim() || undefined,
         avatarEmoji: avatarEmoji.trim() || undefined,
+        avatarUrl: avatarUrl || undefined,
       });
       toast({ title: "Profile updated ✨" });
       setEdit(false);
