@@ -1312,7 +1312,7 @@ const BulkTimelineImport = ({ users }: { users: User[] }) => {
     a.remove();
   };
 
-  const onFile: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !targetId) return;
