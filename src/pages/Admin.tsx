@@ -1058,6 +1058,26 @@ const UserSettingsAdminDialog = ({
               className="mt-1 rounded-xl resize-none font-mono text-xs"
             />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Birthday (MM-DD or YYYY-MM-DD)</label>
+              <Input
+                value={s.birthdayDate ?? ""}
+                onChange={(e) => setS({ ...s, birthdayDate: e.target.value })}
+                placeholder="04-21"
+                className="mt-1 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Birthday note</label>
+              <Input
+                value={s.birthdayNote ?? ""}
+                onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
+                placeholder="Happy Birthday {name} ✨"
+                className="mt-1 rounded-xl"
+              />
+            </div>
+          </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Tab names & visibility</label>
             <div className="mt-2 space-y-2">
