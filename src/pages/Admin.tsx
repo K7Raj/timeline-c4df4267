@@ -1301,7 +1301,7 @@ const BulkTimelineImport = ({ users }: { users: User[] }) => {
   const eligible = users.filter((u) => u.role === "user");
   const [targetId, setTargetId] = useState<string>(eligible[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
-  const fileRef = useState<HTMLInputElement | null>(null as HTMLInputElement | null);
+  
 
   const downloadSample = () => {
     const a = document.createElement("a");
