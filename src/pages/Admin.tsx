@@ -470,7 +470,7 @@ const UserDialog = ({
           role,
         });
         const s = getSettings();
-        s.memoryMapCrud[created.id] = { create: false, update: false, delete: false };
+        s.memoryMapCrud[created.id] = { create: false, update: false, delete: false, pastWindowUpdate: false, pastWindowDelete: false };
         s.travelerCrud[created.id] = { create: false, update: false, delete: false };
         saveSettings(s);
         toast({ title: "User created" });
@@ -646,12 +646,12 @@ const PermsDialog = ({
   target: User | null;
   onClose: () => void;
 }) => {
-  const [perms, setPerms] = useState({ create: false, update: false, delete: false });
+  const [perms, setPerms] = useState({ create: false, update: false, delete: false, pastWindowUpdate: false, pastWindowDelete: false });
 
   useEffect(() => {
     if (!target) return;
     const s = getSettings();
-    setPerms(s.memoryMapCrud[target.id] ?? { create: false, update: false, delete: false });
+    setPerms(s.memoryMapCrud[target.id] ?? { create: false, update: false, delete: false, pastWindowUpdate: false, pastWindowDelete: false });
   }, [target]);
 
   if (!target) return null;
