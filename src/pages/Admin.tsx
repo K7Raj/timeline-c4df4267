@@ -687,6 +687,29 @@ const PermsDialog = ({
               />
             </label>
           ))}
+          <div className="pt-2 pb-1">
+            <p className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">
+              Past-window override (10+ days old)
+            </p>
+            <p className="text-[0.65rem] text-muted-foreground/80 leading-snug">
+              By default users cannot edit/delete memories dated 10+ days in the past. Toggle on to grant override.
+            </p>
+          </div>
+          {([
+            ["pastWindowUpdate", "Allow edit of old entries"],
+            ["pastWindowDelete", "Allow delete of old entries"],
+          ] as const).map(([k, label]) => (
+            <label
+              key={k}
+              className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30"
+            >
+              <span className="text-sm">{label}</span>
+              <Switch
+                checked={perms[k]}
+                onCheckedChange={(v) => setPerms((p) => ({ ...p, [k]: v }))}
+              />
+            </label>
+          ))}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
