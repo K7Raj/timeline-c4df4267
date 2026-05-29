@@ -263,6 +263,32 @@ const Home = () => {
           </h2>
         </div>
 
+        {/* Birthday banner */}
+        {(() => {
+          const bday = useBirthday(settings.birthdayDate);
+          if (!bday) return null;
+          const note = (settings.birthdayNote ?? "Happy Birthday {name} ✨").replace(
+            "{name}",
+            user?.profileName ?? user?.username ?? "you",
+          );
+          if (bday.isToday) {
+            return (
+              <div className="mb-6 bg-gradient-primary border border-primary/40 rounded-2xl p-4 shadow-glow text-center">
+                <p className="text-2xl">🎂🎉</p>
+                <p className="mt-1 text-base font-bold text-primary-foreground">{note}</p>
+              </div>
+            );
+          }
+          return (
+            <div className="mb-6 bg-gradient-card border border-border rounded-2xl p-3 flex items-center gap-3 shadow-elegant">
+              <span className="text-2xl">🎈</span>
+              <p className="text-sm">
+                <span className="font-semibold">{bday.daysLeft}</span> day{bday.daysLeft === 1 ? "" : "s"} to your birthday
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Quotes */}
         {settings.quotes.length > 0 && (
           <div className="mb-6 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
