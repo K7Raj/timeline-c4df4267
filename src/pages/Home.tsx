@@ -280,7 +280,7 @@ const Home = () => {
           return (
             <div className="mb-4 bg-gradient-card border border-border rounded-2xl px-3 py-2 shadow-elegant flex items-center gap-2 overflow-hidden">
               <span className="text-lg shrink-0">🎈</span>
-              <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground shrink-0 hidden xs:inline">Birthday in</span>
+              <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground shrink-0 hidden sm:inline">Birthday in</span>
               <div className="ml-auto flex items-center gap-1 font-mono text-foreground">
                 <TimeBlock value={bday.days} label="d" />
                 <span className="text-muted-foreground/60">:</span>
