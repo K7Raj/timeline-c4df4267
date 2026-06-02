@@ -76,6 +76,7 @@ import { LibraryManager } from "@/components/LibraryManager";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -748,129 +749,158 @@ const SettingsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(100vw-1rem,42rem)] max-w-[42rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-5">
-
+      <DialogContent className="w-[min(100vw-1rem,44rem)] max-w-[44rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-5">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" /> Global defaults
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Tap a card to edit. Per-user overrides take precedence.
+            Per-user overrides take precedence. Pick a section below.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
-          <SettingCard icon={Type} title="Welcome heading" sub="Greeting shown on the user's home screen.">
-            <Input
-              value={s.welcomeHeading}
-              onChange={(e) => setS({ ...s, welcomeHeading: e.target.value })}
-              className="rounded-xl"
-            />
-          </SettingCard>
+        <Tabs defaultValue="branding" className="w-full">
+          <TabsList className="w-full flex overflow-x-auto no-scrollbar gap-1 bg-secondary/40 rounded-xl p-1 h-auto">
+            <TabsTrigger value="branding" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Type className="w-3.5 h-3.5" />Brand</TabsTrigger>
+            <TabsTrigger value="content" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Quote className="w-3.5 h-3.5" />Content</TabsTrigger>
+            <TabsTrigger value="birthday" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Cake className="w-3.5 h-3.5" />Birthday</TabsTrigger>
+            <TabsTrigger value="tabs" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><LayoutGrid className="w-3.5 h-3.5" />Tabs</TabsTrigger>
+            <TabsTrigger value="library" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Library className="w-3.5 h-3.5" />Library</TabsTrigger>
+            <TabsTrigger value="system" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Shield className="w-3.5 h-3.5" />System</TabsTrigger>
+          </TabsList>
 
-          <SettingCard icon={Volume2} title="App sounds" sub="Soft taps, chimes & sparkles across the app." defaultOpen>
-            <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
-              <span className="text-sm">Enable sounds globally</span>
-              <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
-            </label>
-          </SettingCard>
-
-          <SettingCard icon={Shield} title="Security access" sub="Single-device lock and encrypted vault sharing.">
-            <div className="grid gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 p-3">
-                <span className="flex items-center gap-2 text-foreground"><Smartphone className="w-4 h-4 text-primary" /> Device lock</span>
-                <span className="font-semibold text-primary">Active</span>
-              </div>
-              <p className="leading-relaxed">
-                Accounts stay bound to one device. Use Share vault for encrypted transfers instead of copying app data.
-              </p>
-            </div>
-          </SettingCard>
-
-          <SettingCard icon={FolderLock} title="Encrypted backup folder" sub="Pick a device folder where snapshots are written encrypted.">
-            <BackupFolderEditor />
-          </SettingCard>
-
-          <SettingCard icon={Quote} title="Home quotes" sub="One per line.">
-            <Textarea
-              rows={5}
-              value={s.quotes.join("\n")}
-              onChange={(e) =>
-                setS({ ...s, quotes: e.target.value.split("\n").map((l) => l.trimEnd()) })
-              }
-              className="rounded-xl resize-none font-mono text-xs"
-            />
-          </SettingCard>
-
-          <SettingCard icon={Wand2} title="Surprise wishes" sub={`One per line, use {name}.`}>
-            <Textarea
-              rows={4}
-              value={s.surpriseWishes.join("\n")}
-              onChange={(e) =>
-                setS({ ...s, surpriseWishes: e.target.value.split("\n").map((l) => l.trimEnd()) })
-              }
-              className="rounded-xl resize-none font-mono text-xs"
-            />
-          </SettingCard>
-
-          <SettingCard icon={Library} title="Custom library" sub="Emotions & icons used across the app.">
-            <LibraryManager />
-          </SettingCard>
-
-          <SettingCard icon={Cake} title="Birthday (global default)" sub="MM-DD or YYYY-MM-DD. Use {name} in the note.">
-            <div className="grid gap-2">
+          <TabsContent value="branding" className="mt-3 space-y-3">
+            <Field icon={Type} title="Welcome heading" sub="Big greeting on the user's home.">
               <Input
-                type="text"
-                placeholder="e.g. 04-21 or 1996-04-21"
-                value={s.birthdayDate ?? ""}
-                onChange={(e) => setS({ ...s, birthdayDate: e.target.value })}
+                value={s.welcomeHeading}
+                onChange={(e) => setS({ ...s, welcomeHeading: e.target.value })}
                 className="rounded-xl"
               />
-              <Input
-                placeholder="Happy Birthday {name} ✨"
-                value={s.birthdayNote ?? ""}
-                onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
-                className="rounded-xl"
+            </Field>
+            <Field icon={Volume2} title="App sounds" sub="Soft taps, chimes & sparkles.">
+              <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+                <span className="text-sm">Enable sounds globally</span>
+                <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
+              </label>
+            </Field>
+          </TabsContent>
+
+          <TabsContent value="content" className="mt-3 space-y-3">
+            <Field icon={Quote} title="Home quotes" sub="One per line.">
+              <Textarea
+                rows={5}
+                value={s.quotes.join("\n")}
+                onChange={(e) => setS({ ...s, quotes: e.target.value.split("\n").map((l) => l.trimEnd()) })}
+                className="rounded-xl resize-none font-mono text-xs"
               />
-            </div>
-          </SettingCard>
+            </Field>
+            <Field icon={Wand2} title="Surprise wishes" sub="One per line, use {name}.">
+              <Textarea
+                rows={4}
+                value={s.surpriseWishes.join("\n")}
+                onChange={(e) => setS({ ...s, surpriseWishes: e.target.value.split("\n").map((l) => l.trimEnd()) })}
+                className="rounded-xl resize-none font-mono text-xs"
+              />
+            </Field>
+          </TabsContent>
 
-          <SettingCard icon={Upload} title="Bulk import timeline" sub="Upload a JSON array of memories for a chosen user.">
-            <BulkTimelineImport users={users} />
-          </SettingCard>
-
-          <SettingCard icon={LayoutGrid} title="Tab names & visibility" sub="Rename any tab and choose whether it appears by default.">
-            <div className="space-y-2">
-              {TAB_KEYS.map((k) => (
-                <TabRow
-                  key={k}
-                  tabKey={k}
-                  label={getTabLabel(s, k)}
-                  enabled={s.enabledTabs[k]}
-                  onToggle={(v) =>
-                    setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })
-                  }
-                  onRename={(label) =>
-                    setS({
-                      ...s,
-                      tabNames: { ...s.tabNames, [k]: label },
-                      ...(k === "rhythm" ? { rhythmName: label } : {}),
-                    })
-                  }
+          <TabsContent value="birthday" className="mt-3 space-y-3">
+            <Field icon={Cake} title="Default birthday" sub="MM-DD or YYYY-MM-DD. Use {name} in the note.">
+              <div className="grid gap-2">
+                <Input
+                  placeholder="e.g. 04-21 or 1996-04-21"
+                  value={s.birthdayDate ?? ""}
+                  onChange={(e) => setS({ ...s, birthdayDate: e.target.value })}
+                  className="rounded-xl"
                 />
-              ))}
-            </div>
-          </SettingCard>
-        </div>
+                <Input
+                  placeholder="Happy Birthday {name} ✨"
+                  value={s.birthdayNote ?? ""}
+                  onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
+            </Field>
+          </TabsContent>
 
-        <DialogFooter>
+          <TabsContent value="tabs" className="mt-3 space-y-2">
+            {TAB_KEYS.map((k) => (
+              <TabRow
+                key={k}
+                tabKey={k}
+                label={getTabLabel(s, k)}
+                enabled={s.enabledTabs[k]}
+                onToggle={(v) => setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })}
+                onRename={(label) =>
+                  setS({
+                    ...s,
+                    tabNames: { ...s.tabNames, [k]: label },
+                    ...(k === "rhythm" ? { rhythmName: label } : {}),
+                  })
+                }
+              />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="library" className="mt-3 space-y-3">
+            <Field icon={Library} title="Emotions & icons" sub="Shared across the app.">
+              <LibraryManager />
+            </Field>
+            <Field icon={Upload} title="Bulk import timeline" sub="Upload a JSON array of memories for a chosen user.">
+              <BulkTimelineImport users={users} />
+            </Field>
+          </TabsContent>
+
+          <TabsContent value="system" className="mt-3 space-y-3">
+            <Field icon={Shield} title="Security access" sub="Single-device lock + encrypted vault sharing.">
+              <div className="grid gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 p-3">
+                  <span className="flex items-center gap-2 text-foreground"><Smartphone className="w-4 h-4 text-primary" /> Device lock</span>
+                  <span className="font-semibold text-primary">Active</span>
+                </div>
+                <p className="leading-relaxed">
+                  Accounts stay bound to one device. Use Share vault for encrypted transfers instead of copying app data.
+                </p>
+              </div>
+            </Field>
+            <Field icon={FolderLock} title="Encrypted backup folder" sub="Pick a device folder for encrypted snapshots.">
+              <BackupFolderEditor />
+            </Field>
+          </TabsContent>
+        </Tabs>
+
+        <DialogFooter className="mt-4">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>Save</Button>
+          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
+            <Save className="w-4 h-4" /> Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
+
+const Field = ({
+  icon: Icon, title, sub, children,
+}: {
+  icon: typeof Sparkles;
+  title: string;
+  sub?: string;
+  children: ReactNode;
+}) => (
+  <div className="rounded-xl border border-border bg-secondary/20 p-3 max-w-full overflow-hidden">
+    <div className="flex items-center gap-2 mb-2">
+      <div className="w-8 h-8 rounded-lg bg-gradient-primary/15 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-primary" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold truncate">{title}</p>
+        {sub && <p className="text-[0.65rem] text-muted-foreground truncate">{sub}</p>}
+      </div>
+    </div>
+    <div className="max-w-full overflow-x-hidden">{children}</div>
+  </div>
+);
 
 const SettingCard = ({
   icon: Icon, title, sub, children, defaultOpen,

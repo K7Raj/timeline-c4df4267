@@ -263,47 +263,64 @@ const Home = () => {
           </h2>
         </div>
 
-        {/* Birthday banner */}
+        {/* Birthday compact countdown */}
         {(() => {
           const bday = useBirthday(settings.birthdayDate);
+          const name = user?.profileName ?? user?.username ?? "you";
+          const note = (settings.birthdayNote ?? "Happy Birthday {name} ✨").replace("{name}", name);
           if (!bday) return null;
-          const note = (settings.birthdayNote ?? "Happy Birthday {name} ✨").replace(
-            "{name}",
-            user?.profileName ?? user?.username ?? "you",
-          );
           if (bday.isToday) {
             return (
-              <div className="mb-6 bg-gradient-primary border border-primary/40 rounded-2xl p-4 shadow-glow text-center">
-                <p className="text-2xl">🎂🎉</p>
-                <p className="mt-1 text-base font-bold text-primary-foreground">{note}</p>
+              <div className="mb-4 bg-gradient-primary border border-primary/40 rounded-2xl px-4 py-3 shadow-glow flex items-center gap-3">
+                <span className="text-2xl">🎂</span>
+                <p className="text-sm font-bold text-primary-foreground leading-tight">{note}</p>
               </div>
             );
           }
           return (
-            <div className="mb-6 bg-gradient-card border border-border rounded-2xl p-3 flex items-center gap-3 shadow-elegant">
-              <span className="text-2xl">🎈</span>
-              <p className="text-sm">
-                <span className="font-semibold">{bday.daysLeft}</span> day{bday.daysLeft === 1 ? "" : "s"} to your birthday
-              </p>
+            <div className="mb-4 bg-gradient-card border border-border rounded-2xl px-3 py-2 shadow-elegant flex items-center gap-2 overflow-hidden">
+              <span className="text-lg shrink-0">🎈</span>
+              <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground shrink-0 hidden sm:inline">Birthday in</span>
+              <div className="ml-auto flex items-center gap-1 font-mono text-foreground">
+                <TimeBlock value={bday.days} label="d" />
+                <span className="text-muted-foreground/60">:</span>
+                <TimeBlock value={bday.hours} label="h" />
+                <span className="text-muted-foreground/60">:</span>
+                <TimeBlock value={bday.minutes} label="m" />
+                <span className="text-muted-foreground/60">:</span>
+                <TimeBlock value={bday.seconds} label="s" />
+              </div>
             </div>
           );
         })()}
 
-        {/* Quotes */}
-        {settings.quotes.length > 0 && (
-          <div className="mb-6 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-              <div className="space-y-1.5">
-                {settings.quotes.filter(Boolean).map((q, i) => (
-                  <p key={i} className="text-sm italic text-foreground/90 leading-relaxed">
-                    {q}
-                  </p>
-                ))}
+        {/* Quotes (with birthday greeting if today) */}
+        {(() => {
+          const bday = useBirthday(settings.birthdayDate);
+          const name = user?.profileName ?? user?.username ?? "you";
+          const note = (settings.birthdayNote ?? "Happy Birthday {name} ✨").replace("{name}", name);
+          const showBday = !!bday?.isToday;
+          if (!showBday && settings.quotes.length === 0) return null;
+          return (
+            <div className="mb-6 bg-gradient-card border border-border rounded-2xl p-4 shadow-elegant">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div className="space-y-1.5">
+                  {showBday && (
+                    <p className="text-sm font-semibold text-primary leading-relaxed">
+                      🎂 {note}
+                    </p>
+                  )}
+                  {settings.quotes.filter(Boolean).map((q, i) => (
+                    <p key={i} className="text-sm italic text-foreground/90 leading-relaxed">
+                      {q}
+                    </p>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <div className="space-y-3">
           {enabled.map((opt) => (
@@ -581,24 +598,42 @@ const PasscodeDialog = ({
 };
 
 // Compute birthday status from a "YYYY-MM-DD" or "MM-DD" string.
+// Ticks every second to drive the live D:H:M:S countdown.
 function useBirthday(dateStr?: string) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!dateStr) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [dateStr]);
   if (!dateStr) return null;
   const parts = dateStr.split("-").map((p) => parseInt(p, 10));
   if (parts.length < 2 || parts.some((n) => Number.isNaN(n))) return null;
   const [, monthA, dayA] = parts.length === 3 ? parts : [0, parts[0], parts[1]];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   const month = monthA - 1;
   const day = dayA;
+  const today = new Date(now);
+  const isToday = today.getMonth() === month && today.getDate() === day;
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   let next = new Date(today.getFullYear(), month, day);
-  if (next.getTime() < today.getTime()) {
+  if (next.getTime() < startOfToday.getTime()) {
     next = new Date(today.getFullYear() + 1, month, day);
   }
-  const isToday =
-    today.getMonth() === month && today.getDate() === day;
-  const daysLeft = isToday ? 0 : Math.round((next.getTime() - today.getTime()) / 86400000);
-  return { isToday, daysLeft } as { isToday: boolean; daysLeft: number | null };
+  const daysLeft = isToday ? 0 : Math.round((next.getTime() - startOfToday.getTime()) / 86400000);
+  const diff = Math.max(0, next.getTime() - now);
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+  return { isToday, daysLeft, days, hours, minutes, seconds };
 }
+
+const TimeBlock = ({ value, label }: { value: number; label: string }) => (
+  <span className="inline-flex items-baseline gap-0.5">
+    <span className="text-sm font-bold tabular-nums">{String(value).padStart(2, "0")}</span>
+    <span className="text-[0.55rem] uppercase text-muted-foreground">{label}</span>
+  </span>
+);
 
 export default Home;
 
