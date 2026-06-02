@@ -76,6 +76,7 @@ import { LibraryManager } from "@/components/LibraryManager";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
