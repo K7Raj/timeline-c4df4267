@@ -598,24 +598,42 @@ const PasscodeDialog = ({
 };
 
 // Compute birthday status from a "YYYY-MM-DD" or "MM-DD" string.
+// Ticks every second to drive the live D:H:M:S countdown.
 function useBirthday(dateStr?: string) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!dateStr) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [dateStr]);
   if (!dateStr) return null;
   const parts = dateStr.split("-").map((p) => parseInt(p, 10));
   if (parts.length < 2 || parts.some((n) => Number.isNaN(n))) return null;
   const [, monthA, dayA] = parts.length === 3 ? parts : [0, parts[0], parts[1]];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   const month = monthA - 1;
   const day = dayA;
+  const today = new Date(now);
+  const isToday = today.getMonth() === month && today.getDate() === day;
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   let next = new Date(today.getFullYear(), month, day);
-  if (next.getTime() < today.getTime()) {
+  if (next.getTime() < startOfToday.getTime()) {
     next = new Date(today.getFullYear() + 1, month, day);
   }
-  const isToday =
-    today.getMonth() === month && today.getDate() === day;
-  const daysLeft = isToday ? 0 : Math.round((next.getTime() - today.getTime()) / 86400000);
-  return { isToday, daysLeft } as { isToday: boolean; daysLeft: number | null };
+  const daysLeft = isToday ? 0 : Math.round((next.getTime() - startOfToday.getTime()) / 86400000);
+  const diff = Math.max(0, next.getTime() - now);
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+  return { isToday, daysLeft, days, hours, minutes, seconds };
 }
+
+const TimeBlock = ({ value, label }: { value: number; label: string }) => (
+  <span className="inline-flex items-baseline gap-0.5">
+    <span className="text-sm font-bold tabular-nums">{String(value).padStart(2, "0")}</span>
+    <span className="text-[0.55rem] uppercase text-muted-foreground">{label}</span>
+  </span>
+);
 
 export default Home;
 
