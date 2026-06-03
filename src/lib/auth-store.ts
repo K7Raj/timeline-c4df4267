@@ -98,6 +98,15 @@ export function getUserByUsername(username: string): User | null {
   );
 }
 
+export function listDefaultProfiles(): User[] {
+  return listUsers().filter((u) => u.isDefaultProfile);
+}
+
+export function setDefaultProfile(id: string, value: boolean) {
+  const users = listUsers();
+  save(users.map((u) => (u.id === id ? { ...u, isDefaultProfile: value } : u)));
+}
+
 // ----- passcode hashing -----
 // We never persist the plaintext passcode. Each user has a random salt
 // and we store SHA-256(salt + ":" + passcode). Legacy plaintext records
