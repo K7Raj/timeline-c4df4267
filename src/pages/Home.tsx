@@ -263,32 +263,52 @@ const Home = () => {
           </h2>
         </div>
 
-        {/* Birthday compact countdown */}
+        {/* Birthday compact countdown with admin-editable content */}
         {(() => {
           const bday = useBirthday(settings.birthdayDate);
           const name = user?.profileName ?? user?.username ?? "you";
           const note = (settings.birthdayNote ?? "Happy Birthday {name} ✨").replace("{name}", name);
+          const title = settings.birthdayTitle?.trim() || "Counting down to your special day";
+          const message = settings.birthdayMessage?.trim() || "";
+          const sticker = settings.birthdaySticker?.trim() || "🎈";
+          const accent = settings.birthdayAccent?.trim();
+          const accentStyle = accent ? ({ borderColor: accent, boxShadow: `0 0 0 1px ${accent}33` } as React.CSSProperties) : undefined;
           if (!bday) return null;
           if (bday.isToday) {
             return (
-              <div className="mb-4 bg-gradient-primary border border-primary/40 rounded-2xl px-4 py-3 shadow-glow flex items-center gap-3">
+              <div
+                className="mb-4 bg-gradient-primary border border-primary/40 rounded-2xl px-4 py-3 shadow-glow flex items-center gap-3"
+                style={accent ? { background: `linear-gradient(135deg, ${accent}, ${accent}cc)` } : undefined}
+              >
                 <span className="text-2xl">🎂</span>
                 <p className="text-sm font-bold text-primary-foreground leading-tight">{note}</p>
               </div>
             );
           }
           return (
-            <div className="mb-4 bg-gradient-card border border-border rounded-2xl px-3 py-2 shadow-elegant flex items-center gap-2 overflow-hidden">
-              <span className="text-lg shrink-0">🎈</span>
-              <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground shrink-0 hidden sm:inline">Birthday in</span>
-              <div className="ml-auto flex items-center gap-1 font-mono text-foreground">
-                <TimeBlock value={bday.days} label="d" />
-                <span className="text-muted-foreground/60">:</span>
-                <TimeBlock value={bday.hours} label="h" />
-                <span className="text-muted-foreground/60">:</span>
-                <TimeBlock value={bday.minutes} label="m" />
-                <span className="text-muted-foreground/60">:</span>
-                <TimeBlock value={bday.seconds} label="s" />
+            <div
+              className="mb-4 bg-gradient-card border border-border rounded-2xl px-3 py-2.5 shadow-elegant overflow-hidden"
+              style={accentStyle}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl shrink-0">{sticker}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.7rem] font-semibold truncate" style={accent ? { color: accent } : undefined}>
+                    {title}
+                  </p>
+                  {message && (
+                    <p className="text-[0.65rem] text-muted-foreground truncate italic">{message}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-0.5 font-mono shrink-0">
+                  <TimeBlock value={bday.days} label="d" />
+                  <span className="text-muted-foreground/60">:</span>
+                  <TimeBlock value={bday.hours} label="h" />
+                  <span className="text-muted-foreground/60">:</span>
+                  <TimeBlock value={bday.minutes} label="m" />
+                  <span className="text-muted-foreground/60">:</span>
+                  <TimeBlock value={bday.seconds} label="s" />
+                </div>
               </div>
             </div>
           );
