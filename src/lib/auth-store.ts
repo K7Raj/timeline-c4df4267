@@ -171,7 +171,7 @@ export async function createUser(data: {
 
 export async function updateUser(
   id: string,
-  patch: Partial<Pick<User, "username" | "profileName" | "role" | "bio" | "avatarEmoji" | "avatarUrl">> & { passcode?: string },
+  patch: Partial<Pick<User, "username" | "profileName" | "role" | "bio" | "avatarEmoji" | "avatarUrl" | "isDefaultProfile">> & { passcode?: string },
 ) {
   const users = listUsers();
   let nextPatch: Partial<User> = { ...patch };
