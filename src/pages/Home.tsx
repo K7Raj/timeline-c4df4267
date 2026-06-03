@@ -101,6 +101,40 @@ const Home = () => {
     if (user?.id) setSoundEnabled(getUserSettings(user.id).soundEnabled);
   }, [user?.id]);
 
+  // "On this day" — once per day per user, surface a toast + (if permitted)
+  // a Web Notification for memories whose month/day match today.
+  useEffect(() => {
+    if (!user?.id) return;
+    const s = getUserSettings(user.id);
+    if (!s.notificationsEnabled) return;
+    const key = `on-this-day:${user.id}:${new Date().toDateString()}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    (async () => {
+      const { getEntries } = await import("@/lib/timeline-store");
+      const entries = await getEntries(user.id);
+      const today = new Date();
+      const matches = entries.filter((e) => {
+        const d = new Date(e.date);
+        return d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+      });
+      if (matches.length === 0) return;
+      const title = matches.length === 1
+        ? `On this day: ${matches[0].title}`
+        : `${matches.length} memories on this day ✨`;
+      const body = matches
+        .slice(0, 3)
+        .map((m) => `${new Date(m.date).getFullYear()} · ${m.title}`)
+        .join("\n");
+      toast({ title, description: body });
+      try {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(title, { body, icon: "/favicon.ico", tag: key });
+        }
+      } catch { /* ignore */ }
+    })();
+  }, [user?.id]);
+
   const handleLogout = () => {
     setLoggingOut(true);
     logout();
