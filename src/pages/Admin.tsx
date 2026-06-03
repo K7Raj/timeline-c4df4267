@@ -53,6 +53,7 @@ import {
   getCurrentUser,
   listUsers,
   logout,
+  setDefaultProfile,
   updateUser,
   type Role,
   type User,
