@@ -1210,7 +1210,7 @@ const UserSettingsAdminDialog = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Birthday note</label>
+              <label className="text-xs font-medium text-muted-foreground">Birthday note (shown all day)</label>
               <Input
                 value={s.birthdayNote ?? ""}
                 onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
@@ -1218,7 +1218,64 @@ const UserSettingsAdminDialog = ({
                 className="mt-1 rounded-xl"
               />
             </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">Countdown title</label>
+              <Input
+                value={s.birthdayTitle ?? ""}
+                onChange={(e) => setS({ ...s, birthdayTitle: e.target.value })}
+                placeholder="Counting down to your special day"
+                className="mt-1 rounded-xl"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">Sub-message under title</label>
+              <Textarea
+                rows={2}
+                value={s.birthdayMessage ?? ""}
+                onChange={(e) => setS({ ...s, birthdayMessage: e.target.value })}
+                placeholder="Every moment with you is a gift wrapped in love 🎁"
+                className="mt-1 rounded-xl resize-none text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Sticker</label>
+              <Input
+                value={s.birthdaySticker ?? ""}
+                onChange={(e) => setS({ ...s, birthdaySticker: e.target.value })}
+                placeholder="🎈"
+                maxLength={4}
+                className="mt-1 rounded-xl text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Accent color</label>
+              <div className="mt-1 flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 h-10">
+                <input
+                  type="color"
+                  value={s.birthdayAccent || "#ec4899"}
+                  onChange={(e) => setS({ ...s, birthdayAccent: e.target.value })}
+                  className="w-8 h-6 rounded cursor-pointer bg-transparent"
+                />
+                <span className="text-xs text-muted-foreground flex-1 truncate">{s.birthdayAccent || "default"}</span>
+                {s.birthdayAccent && (
+                  <button type="button" onClick={() => setS({ ...s, birthdayAccent: "" })} className="text-[0.65rem] text-muted-foreground hover:text-destructive">
+                    clear
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
+
+          <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+            <div>
+              <p className="text-sm font-medium">On-this-day notifications</p>
+              <p className="text-[0.65rem] text-muted-foreground">Toast + device notification on matching dates.</p>
+            </div>
+            <Switch
+              checked={s.notificationsEnabled ?? true}
+              onCheckedChange={(v) => setS({ ...s, notificationsEnabled: v })}
+            />
+          </label>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Tab names & visibility</label>
             <div className="mt-2 space-y-2">
