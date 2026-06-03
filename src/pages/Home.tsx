@@ -427,11 +427,22 @@ const Drawer = ({
     : null;
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [sound, setSound] = useState(() => (userId ? getUserSettings(userId).soundEnabled : true));
+  const [notif, setNotif] = useState(() => (userId ? getUserSettings(userId).notificationsEnabled ?? true : true));
   const toggleSound = (v: boolean) => {
     setSound(v);
     if (userId) {
       saveUserSettings(userId, { soundEnabled: v });
       setSoundEnabled(v);
+    }
+  };
+  const toggleNotif = async (v: boolean) => {
+    setNotif(v);
+    if (userId) saveUserSettings(userId, { notificationsEnabled: v });
+    if (v && "Notification" in window && Notification.permission === "default") {
+      try {
+        const res = await Notification.requestPermission();
+        if (res === "granted") toast({ title: "Device notifications enabled 🔔" });
+      } catch { /* ignore */ }
     }
   };
   return (
