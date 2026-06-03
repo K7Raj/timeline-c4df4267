@@ -210,6 +210,11 @@ function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
     soundEnabled: o.soundEnabled ?? d.soundEnabled,
     birthdayDate: o.birthdayDate ?? d.birthdayDate,
     birthdayNote: o.birthdayNote ?? d.birthdayNote,
+    birthdayTitle: o.birthdayTitle ?? d.birthdayTitle,
+    birthdayMessage: o.birthdayMessage ?? d.birthdayMessage,
+    birthdayAccent: o.birthdayAccent ?? d.birthdayAccent,
+    birthdaySticker: o.birthdaySticker ?? d.birthdaySticker,
+    notificationsEnabled: o.notificationsEnabled ?? d.notificationsEnabled,
   };
 }
 
