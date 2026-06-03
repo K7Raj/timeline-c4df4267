@@ -270,6 +270,11 @@ const Admin = () => {
                         <Smartphone className="w-3 h-3" /> bound
                       </span>
                     )}
+                    {u.isDefaultProfile && (
+                      <span title="Shown on quick-login screen" className="text-[0.6rem] text-primary flex items-center gap-0.5">
+                        <UserCircle2 className="w-3 h-3" /> quick
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
                 </div>
