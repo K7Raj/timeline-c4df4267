@@ -142,6 +142,11 @@ const normalizeSettings = (input?: Partial<AppSettings>): AppSettings => {
     rhythmName: input?.rhythmName ?? tabNames.rhythm,
     birthdayDate: input?.birthdayDate ?? defaults.birthdayDate,
     birthdayNote: input?.birthdayNote ?? defaults.birthdayNote,
+    birthdayTitle: input?.birthdayTitle ?? defaults.birthdayTitle,
+    birthdayMessage: input?.birthdayMessage ?? defaults.birthdayMessage,
+    birthdayAccent: input?.birthdayAccent ?? defaults.birthdayAccent,
+    birthdaySticker: input?.birthdaySticker ?? defaults.birthdaySticker,
+    notificationsEnabled: input?.notificationsEnabled ?? defaults.notificationsEnabled,
   };
 };
 
