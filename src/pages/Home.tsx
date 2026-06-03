@@ -101,6 +101,40 @@ const Home = () => {
     if (user?.id) setSoundEnabled(getUserSettings(user.id).soundEnabled);
   }, [user?.id]);
 
+  // "On this day" — once per day per user, surface a toast + (if permitted)
+  // a Web Notification for memories whose month/day match today.
+  useEffect(() => {
+    if (!user?.id) return;
+    const s = getUserSettings(user.id);
+    if (!s.notificationsEnabled) return;
+    const key = `on-this-day:${user.id}:${new Date().toDateString()}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    (async () => {
+      const { getEntries } = await import("@/lib/timeline-store");
+      const entries = await getEntries(user.id);
+      const today = new Date();
+      const matches = entries.filter((e) => {
+        const d = new Date(e.date);
+        return d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+      });
+      if (matches.length === 0) return;
+      const title = matches.length === 1
+        ? `On this day: ${matches[0].title}`
+        : `${matches.length} memories on this day ✨`;
+      const body = matches
+        .slice(0, 3)
+        .map((m) => `${new Date(m.date).getFullYear()} · ${m.title}`)
+        .join("\n");
+      toast({ title, description: body });
+      try {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(title, { body, icon: "/favicon.ico", tag: key });
+        }
+      } catch { /* ignore */ }
+    })();
+  }, [user?.id]);
+
   const handleLogout = () => {
     setLoggingOut(true);
     logout();
@@ -263,32 +297,52 @@ const Home = () => {
           </h2>
         </div>
 
-        {/* Birthday compact countdown */}
+        {/* Birthday compact countdown with admin-editable content */}
         {(() => {
           const bday = useBirthday(settings.birthdayDate);
           const name = user?.profileName ?? user?.username ?? "you";
           const note = (settings.birthdayNote ?? "Happy Birthday {name} ✨").replace("{name}", name);
+          const title = settings.birthdayTitle?.trim() || "Counting down to your special day";
+          const message = settings.birthdayMessage?.trim() || "";
+          const sticker = settings.birthdaySticker?.trim() || "🎈";
+          const accent = settings.birthdayAccent?.trim();
+          const accentStyle = accent ? ({ borderColor: accent, boxShadow: `0 0 0 1px ${accent}33` } as React.CSSProperties) : undefined;
           if (!bday) return null;
           if (bday.isToday) {
             return (
-              <div className="mb-4 bg-gradient-primary border border-primary/40 rounded-2xl px-4 py-3 shadow-glow flex items-center gap-3">
+              <div
+                className="mb-4 bg-gradient-primary border border-primary/40 rounded-2xl px-4 py-3 shadow-glow flex items-center gap-3"
+                style={accent ? { background: `linear-gradient(135deg, ${accent}, ${accent}cc)` } : undefined}
+              >
                 <span className="text-2xl">🎂</span>
                 <p className="text-sm font-bold text-primary-foreground leading-tight">{note}</p>
               </div>
             );
           }
           return (
-            <div className="mb-4 bg-gradient-card border border-border rounded-2xl px-3 py-2 shadow-elegant flex items-center gap-2 overflow-hidden">
-              <span className="text-lg shrink-0">🎈</span>
-              <span className="text-[0.65rem] uppercase tracking-wider text-muted-foreground shrink-0 hidden sm:inline">Birthday in</span>
-              <div className="ml-auto flex items-center gap-1 font-mono text-foreground">
-                <TimeBlock value={bday.days} label="d" />
-                <span className="text-muted-foreground/60">:</span>
-                <TimeBlock value={bday.hours} label="h" />
-                <span className="text-muted-foreground/60">:</span>
-                <TimeBlock value={bday.minutes} label="m" />
-                <span className="text-muted-foreground/60">:</span>
-                <TimeBlock value={bday.seconds} label="s" />
+            <div
+              className="mb-4 bg-gradient-card border border-border rounded-2xl px-3 py-2.5 shadow-elegant overflow-hidden"
+              style={accentStyle}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl shrink-0">{sticker}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.7rem] font-semibold truncate" style={accent ? { color: accent } : undefined}>
+                    {title}
+                  </p>
+                  {message && (
+                    <p className="text-[0.65rem] text-muted-foreground truncate italic">{message}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-0.5 font-mono shrink-0">
+                  <TimeBlock value={bday.days} label="d" />
+                  <span className="text-muted-foreground/60">:</span>
+                  <TimeBlock value={bday.hours} label="h" />
+                  <span className="text-muted-foreground/60">:</span>
+                  <TimeBlock value={bday.minutes} label="m" />
+                  <span className="text-muted-foreground/60">:</span>
+                  <TimeBlock value={bday.seconds} label="s" />
+                </div>
               </div>
             </div>
           );
@@ -373,11 +427,22 @@ const Drawer = ({
     : null;
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [sound, setSound] = useState(() => (userId ? getUserSettings(userId).soundEnabled : true));
+  const [notif, setNotif] = useState(() => (userId ? getUserSettings(userId).notificationsEnabled ?? true : true));
   const toggleSound = (v: boolean) => {
     setSound(v);
     if (userId) {
       saveUserSettings(userId, { soundEnabled: v });
       setSoundEnabled(v);
+    }
+  };
+  const toggleNotif = async (v: boolean) => {
+    setNotif(v);
+    if (userId) saveUserSettings(userId, { notificationsEnabled: v });
+    if (v && "Notification" in window && Notification.permission === "default") {
+      try {
+        const res = await Notification.requestPermission();
+        if (res === "granted") toast({ title: "Device notifications enabled 🔔" });
+      } catch { /* ignore */ }
     }
   };
   return (
@@ -471,6 +536,13 @@ const Drawer = ({
                 <span className="text-sm">Sound</span>
               </div>
               <Switch checked={sound} onCheckedChange={toggleSound} />
+            </div>
+            <div className="flex items-center justify-between px-3 py-2.5 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Bell className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">On-this-day notifications</span>
+              </div>
+              <Switch checked={notif} onCheckedChange={toggleNotif} />
             </div>
             <button
               onClick={onOpenPasscode}

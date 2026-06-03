@@ -37,6 +37,11 @@ export interface AppSettings {
   soundEnabled: boolean;
   birthdayDate?: string;
   birthdayNote?: string;
+  birthdayTitle?: string;
+  birthdayMessage?: string;
+  birthdayAccent?: string; // hex like "#ec4899"
+  birthdaySticker?: string; // emoji or short text
+  notificationsEnabled?: boolean; // on-this-day toasts + OS notifications
 }
 
 const KEY = "app-settings-v2";
@@ -74,6 +79,11 @@ const defaults: AppSettings = {
   soundEnabled: true,
   birthdayDate: "",
   birthdayNote: "Happy Birthday {name} ✨",
+  birthdayTitle: "Counting down to your special day",
+  birthdayMessage: "Every moment with you is a gift wrapped in love 🎁",
+  birthdayAccent: "",
+  birthdaySticker: "🎈",
+  notificationsEnabled: true,
 };
 
 interface Store {
@@ -132,6 +142,11 @@ const normalizeSettings = (input?: Partial<AppSettings>): AppSettings => {
     rhythmName: input?.rhythmName ?? tabNames.rhythm,
     birthdayDate: input?.birthdayDate ?? defaults.birthdayDate,
     birthdayNote: input?.birthdayNote ?? defaults.birthdayNote,
+    birthdayTitle: input?.birthdayTitle ?? defaults.birthdayTitle,
+    birthdayMessage: input?.birthdayMessage ?? defaults.birthdayMessage,
+    birthdayAccent: input?.birthdayAccent ?? defaults.birthdayAccent,
+    birthdaySticker: input?.birthdaySticker ?? defaults.birthdaySticker,
+    notificationsEnabled: input?.notificationsEnabled ?? defaults.notificationsEnabled,
   };
 };
 
@@ -195,6 +210,11 @@ function merge(d: AppSettings, o?: Partial<AppSettings>): AppSettings {
     soundEnabled: o.soundEnabled ?? d.soundEnabled,
     birthdayDate: o.birthdayDate ?? d.birthdayDate,
     birthdayNote: o.birthdayNote ?? d.birthdayNote,
+    birthdayTitle: o.birthdayTitle ?? d.birthdayTitle,
+    birthdayMessage: o.birthdayMessage ?? d.birthdayMessage,
+    birthdayAccent: o.birthdayAccent ?? d.birthdayAccent,
+    birthdaySticker: o.birthdaySticker ?? d.birthdaySticker,
+    notificationsEnabled: o.notificationsEnabled ?? d.notificationsEnabled,
   };
 }
 

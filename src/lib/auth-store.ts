@@ -26,6 +26,9 @@ export interface User {
   // sanctioned cross-device move is the encrypted vault share flow,
   // which carries its own device id along.
   boundDeviceId?: string;
+  // When true, this profile is shown on the passcode-first login screen
+  // so the user can just tap their avatar and enter the passcode.
+  isDefaultProfile?: boolean;
 }
 
 const USERS_KEY = "vault-users";
@@ -93,6 +96,15 @@ export function getUserByUsername(username: string): User | null {
       (u) => u.username.toLowerCase() === username.toLowerCase(),
     ) ?? null
   );
+}
+
+export function listDefaultProfiles(): User[] {
+  return listUsers().filter((u) => u.isDefaultProfile);
+}
+
+export function setDefaultProfile(id: string, value: boolean) {
+  const users = listUsers();
+  save(users.map((u) => (u.id === id ? { ...u, isDefaultProfile: value } : u)));
 }
 
 // ----- passcode hashing -----
@@ -168,7 +180,7 @@ export async function createUser(data: {
 
 export async function updateUser(
   id: string,
-  patch: Partial<Pick<User, "username" | "profileName" | "role" | "bio" | "avatarEmoji" | "avatarUrl">> & { passcode?: string },
+  patch: Partial<Pick<User, "username" | "profileName" | "role" | "bio" | "avatarEmoji" | "avatarUrl" | "isDefaultProfile">> & { passcode?: string },
 ) {
   const users = listUsers();
   let nextPatch: Partial<User> = { ...patch };

@@ -22,6 +22,7 @@ import {
   Smartphone,
   MoreHorizontal,
   Check,
+  UserCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ import {
   getCurrentUser,
   listUsers,
   logout,
+  setDefaultProfile,
   updateUser,
   type Role,
   type User,
@@ -268,6 +270,11 @@ const Admin = () => {
                         <Smartphone className="w-3 h-3" /> bound
                       </span>
                     )}
+                    {u.isDefaultProfile && (
+                      <span title="Shown on quick-login screen" className="text-[0.6rem] text-primary flex items-center gap-0.5">
+                        <UserCircle2 className="w-3 h-3" /> quick
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
                 </div>
@@ -304,6 +311,18 @@ const Admin = () => {
                         <DropdownMenuSeparator />
                       </>
                     )}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const next = !u.isDefaultProfile;
+                        setDefaultProfile(u.id, next);
+                        toast({ title: next ? `${u.profileName} shown on quick login` : `${u.profileName} hidden from quick login` });
+                        refresh();
+                      }}
+                      className="gap-2 rounded-lg"
+                    >
+                      <UserCircle2 className="w-4 h-4" />
+                      {u.isDefaultProfile ? "Remove from quick login" : "Show on quick login"}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setPwTarget(u)} className="gap-2 rounded-lg">
                       <KeyRound className="w-4 h-4" /> Change passcode
                     </DropdownMenuItem>
@@ -721,6 +740,31 @@ const PermsDialog = ({
   );
 };
 
+type SettingSectionKey =
+  | "welcome" | "quotes" | "wishes" | "birthday" | "tabs"
+  | "library" | "bulk" | "sound" | "system" | "backup";
+
+interface SettingSectionDef {
+  key: SettingSectionKey;
+  label: string;
+  sub: string;
+  icon: typeof Sparkles;
+  tint: string; // tailwind from gradient
+}
+
+const SETTING_SECTIONS: SettingSectionDef[] = [
+  { key: "welcome",  label: "Welcome",  sub: "Big home heading",        icon: Type,       tint: "from-pink-500/20 to-rose-500/10" },
+  { key: "quotes",   label: "Quotes",   sub: "Lines on the home card",  icon: Quote,      tint: "from-violet-500/20 to-fuchsia-500/10" },
+  { key: "wishes",   label: "Wishes",   sub: "Surprise wish lines",     icon: Wand2,      tint: "from-amber-500/20 to-orange-500/10" },
+  { key: "birthday", label: "Birthday", sub: "Date, timer & message",   icon: Cake,       tint: "from-rose-500/20 to-pink-500/10" },
+  { key: "tabs",     label: "Tabs",     sub: "Rename & toggle pages",   icon: LayoutGrid, tint: "from-sky-500/20 to-blue-500/10" },
+  { key: "library",  label: "Library",  sub: "Emotions & icons",        icon: Library,    tint: "from-emerald-500/20 to-teal-500/10" },
+  { key: "bulk",     label: "Bulk import", sub: "JSON memories upload", icon: Upload,     tint: "from-indigo-500/20 to-blue-500/10" },
+  { key: "sound",    label: "Sound",    sub: "Global audio toggle",     icon: Volume2,    tint: "from-yellow-500/20 to-amber-500/10" },
+  { key: "system",   label: "Security", sub: "Device lock status",      icon: Shield,     tint: "from-slate-500/20 to-zinc-500/10" },
+  { key: "backup",   label: "Backups",  sub: "Encrypted snapshots",     icon: FolderLock, tint: "from-fuchsia-500/20 to-purple-500/10" },
+];
+
 const SettingsDialog = ({
   open,
   onOpenChange,
@@ -731,128 +775,191 @@ const SettingsDialog = ({
   users: User[];
 }) => {
   const [s, setS] = useState<AppSettings>(() => getSettings());
+  const [active, setActive] = useState<SettingSectionKey | null>(null);
 
   useEffect(() => {
-    if (open) setS(getSettings());
+    if (open) { setS(getSettings()); setActive(null); }
   }, [open]);
 
   const save = () => {
     saveSettings(s);
     setSoundEnabled(s.soundEnabled);
-    // Notify all non-admin users about the update
     users.filter((u) => u.role === "user").forEach((u) =>
-      pushNotice(u.id, "Admin updated app settings (welcome, quotes or tabs)"),
+      pushNotice(u.id, "Admin updated app settings"),
     );
     toast({ title: "App settings saved ✨" });
+    setActive(null);
     onOpenChange(false);
   };
 
+  const activeDef = SETTING_SECTIONS.find((x) => x.key === active) ?? null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(100vw-1rem,44rem)] max-w-[44rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-5">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" /> Global defaults
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            Per-user overrides take precedence. Pick a section below.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open && !active} onOpenChange={(o) => { if (!o) onOpenChange(false); }}>
+        <DialogContent className="w-[min(100vw-1rem,32rem)] max-w-[32rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-5">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> Global settings
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Tap a tile to edit. Per-user overrides take precedence.
+            </DialogDescription>
+          </DialogHeader>
 
-        <Tabs defaultValue="branding" className="w-full">
-          <TabsList className="w-full flex overflow-x-auto no-scrollbar gap-1 bg-secondary/40 rounded-xl p-1 h-auto">
-            <TabsTrigger value="branding" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Type className="w-3.5 h-3.5" />Brand</TabsTrigger>
-            <TabsTrigger value="content" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Quote className="w-3.5 h-3.5" />Content</TabsTrigger>
-            <TabsTrigger value="birthday" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Cake className="w-3.5 h-3.5" />Birthday</TabsTrigger>
-            <TabsTrigger value="tabs" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><LayoutGrid className="w-3.5 h-3.5" />Tabs</TabsTrigger>
-            <TabsTrigger value="library" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Library className="w-3.5 h-3.5" />Library</TabsTrigger>
-            <TabsTrigger value="system" className="flex-1 min-w-fit rounded-lg gap-1.5 text-xs"><Shield className="w-3.5 h-3.5" />System</TabsTrigger>
-          </TabsList>
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            {SETTING_SECTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setActive(opt.key)}
+                className={`group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-gradient-to-br ${opt.tint} p-3 aspect-square text-center hover:border-primary/50 hover:shadow-glow transition active:scale-[0.97]`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-background/60 backdrop-blur flex items-center justify-center shrink-0">
+                  <opt.icon className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-[0.7rem] font-semibold leading-tight">{opt.label}</span>
+                <span className="text-[0.55rem] text-muted-foreground leading-tight line-clamp-2">{opt.sub}</span>
+              </button>
+            ))}
+          </div>
 
-          <TabsContent value="branding" className="mt-3 space-y-3">
-            <Field icon={Type} title="Welcome heading" sub="Big greeting on the user's home.">
+          <DialogFooter className="mt-4">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
+            <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
+              <Save className="w-4 h-4" /> Save all
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!active} onOpenChange={(o) => { if (!o) setActive(null); }}>
+        <DialogContent className="w-[min(100vw-1rem,30rem)] max-w-[30rem] max-h-[92dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-5">
+          {activeDef && (
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <activeDef.icon className="w-4 h-4 text-primary" /> {activeDef.label}
+              </DialogTitle>
+              <DialogDescription className="text-xs">{activeDef.sub}</DialogDescription>
+            </DialogHeader>
+          )}
+
+          <div className="mt-2 space-y-3">
+            {active === "welcome" && (
               <Input
                 value={s.welcomeHeading}
                 onChange={(e) => setS({ ...s, welcomeHeading: e.target.value })}
                 className="rounded-xl"
+                placeholder="Your special surprise awaits ✨"
               />
-            </Field>
-            <Field icon={Volume2} title="App sounds" sub="Soft taps, chimes & sparkles.">
-              <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
-                <span className="text-sm">Enable sounds globally</span>
-                <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
-              </label>
-            </Field>
-          </TabsContent>
+            )}
 
-          <TabsContent value="content" className="mt-3 space-y-3">
-            <Field icon={Quote} title="Home quotes" sub="One per line.">
+            {active === "quotes" && (
               <Textarea
-                rows={5}
+                rows={6}
                 value={s.quotes.join("\n")}
                 onChange={(e) => setS({ ...s, quotes: e.target.value.split("\n").map((l) => l.trimEnd()) })}
                 className="rounded-xl resize-none font-mono text-xs"
+                placeholder="One line per quote"
               />
-            </Field>
-            <Field icon={Wand2} title="Surprise wishes" sub="One per line, use {name}.">
+            )}
+
+            {active === "wishes" && (
               <Textarea
-                rows={4}
+                rows={6}
                 value={s.surpriseWishes.join("\n")}
                 onChange={(e) => setS({ ...s, surpriseWishes: e.target.value.split("\n").map((l) => l.trimEnd()) })}
                 className="rounded-xl resize-none font-mono text-xs"
+                placeholder="Use {name} for the user's name"
               />
-            </Field>
-          </TabsContent>
+            )}
 
-          <TabsContent value="birthday" className="mt-3 space-y-3">
-            <Field icon={Cake} title="Default birthday" sub="MM-DD or YYYY-MM-DD. Use {name} in the note.">
+            {active === "birthday" && (
               <div className="grid gap-2">
                 <Input
-                  placeholder="e.g. 04-21 or 1996-04-21"
+                  placeholder="Birthday (MM-DD or YYYY-MM-DD)"
                   value={s.birthdayDate ?? ""}
                   onChange={(e) => setS({ ...s, birthdayDate: e.target.value })}
                   className="rounded-xl"
                 />
                 <Input
-                  placeholder="Happy Birthday {name} ✨"
+                  placeholder="Title (e.g. Counting down to your special day)"
+                  value={s.birthdayTitle ?? ""}
+                  onChange={(e) => setS({ ...s, birthdayTitle: e.target.value })}
+                  className="rounded-xl"
+                />
+                <Input
+                  placeholder="Birthday message (shown all day on the bday)"
                   value={s.birthdayNote ?? ""}
                   onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
                   className="rounded-xl"
                 />
+                <Textarea
+                  rows={2}
+                  placeholder="Sub-message under the title (optional)"
+                  value={s.birthdayMessage ?? ""}
+                  onChange={(e) => setS({ ...s, birthdayMessage: e.target.value })}
+                  className="rounded-xl resize-none text-xs"
+                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="🎈"
+                    value={s.birthdaySticker ?? ""}
+                    onChange={(e) => setS({ ...s, birthdaySticker: e.target.value })}
+                    maxLength={4}
+                    className="rounded-xl text-center w-16"
+                  />
+                  <label className="flex-1 flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 h-10">
+                    <span className="text-xs text-muted-foreground flex-1">Accent</span>
+                    <input
+                      type="color"
+                      value={s.birthdayAccent || "#ec4899"}
+                      onChange={(e) => setS({ ...s, birthdayAccent: e.target.value })}
+                      className="w-8 h-6 rounded cursor-pointer bg-transparent"
+                    />
+                    {s.birthdayAccent && (
+                      <button type="button" onClick={() => setS({ ...s, birthdayAccent: "" })} className="text-[0.65rem] text-muted-foreground hover:text-destructive">
+                        clear
+                      </button>
+                    )}
+                  </label>
+                </div>
               </div>
-            </Field>
-          </TabsContent>
+            )}
 
-          <TabsContent value="tabs" className="mt-3 space-y-2">
-            {TAB_KEYS.map((k) => (
-              <TabRow
-                key={k}
-                tabKey={k}
-                label={getTabLabel(s, k)}
-                enabled={s.enabledTabs[k]}
-                onToggle={(v) => setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })}
-                onRename={(label) =>
-                  setS({
-                    ...s,
-                    tabNames: { ...s.tabNames, [k]: label },
-                    ...(k === "rhythm" ? { rhythmName: label } : {}),
-                  })
-                }
-              />
-            ))}
-          </TabsContent>
+            {active === "tabs" && (
+              <div className="space-y-2">
+                {TAB_KEYS.map((k) => (
+                  <TabRow
+                    key={k}
+                    tabKey={k}
+                    label={getTabLabel(s, k)}
+                    enabled={s.enabledTabs[k]}
+                    onToggle={(v) => setS({ ...s, enabledTabs: { ...s.enabledTabs, [k]: v } })}
+                    onRename={(label) =>
+                      setS({
+                        ...s,
+                        tabNames: { ...s.tabNames, [k]: label },
+                        ...(k === "rhythm" ? { rhythmName: label } : {}),
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            )}
 
-          <TabsContent value="library" className="mt-3 space-y-3">
-            <Field icon={Library} title="Emotions & icons" sub="Shared across the app.">
-              <LibraryManager />
-            </Field>
-            <Field icon={Upload} title="Bulk import timeline" sub="Upload a JSON array of memories for a chosen user.">
-              <BulkTimelineImport users={users} />
-            </Field>
-          </TabsContent>
+            {active === "library" && <LibraryManager />}
 
-          <TabsContent value="system" className="mt-3 space-y-3">
-            <Field icon={Shield} title="Security access" sub="Single-device lock + encrypted vault sharing.">
+            {active === "bulk" && <BulkTimelineImport users={users} />}
+
+            {active === "sound" && (
+              <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+                <span className="text-sm">Enable sounds globally</span>
+                <Switch checked={s.soundEnabled} onCheckedChange={(v) => setS({ ...s, soundEnabled: v })} />
+              </label>
+            )}
+
+            {active === "system" && (
               <div className="grid gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 p-3">
                   <span className="flex items-center gap-2 text-foreground"><Smartphone className="w-4 h-4 text-primary" /> Device lock</span>
@@ -862,21 +969,20 @@ const SettingsDialog = ({
                   Accounts stay bound to one device. Use Share vault for encrypted transfers instead of copying app data.
                 </p>
               </div>
-            </Field>
-            <Field icon={FolderLock} title="Encrypted backup folder" sub="Pick a device folder for encrypted snapshots.">
-              <BackupFolderEditor />
-            </Field>
-          </TabsContent>
-        </Tabs>
+            )}
 
-        <DialogFooter className="mt-4">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
-            <Save className="w-4 h-4" /> Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            {active === "backup" && <BackupFolderEditor />}
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="ghost" onClick={() => setActive(null)}>Back</Button>
+            <Button className="bg-gradient-primary text-primary-foreground" onClick={save}>
+              <Save className="w-4 h-4" /> Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -1039,6 +1145,11 @@ const UserSettingsAdminDialog = ({
       rhythmName: s.rhythmName,
       birthdayDate: s.birthdayDate,
       birthdayNote: s.birthdayNote,
+      birthdayTitle: s.birthdayTitle,
+      birthdayMessage: s.birthdayMessage,
+      birthdayAccent: s.birthdayAccent,
+      birthdaySticker: s.birthdaySticker,
+      notificationsEnabled: s.notificationsEnabled,
     });
     pushNotice(target.id, "Admin updated your personal settings");
     toast({ title: `Settings saved for ${target.profileName}` });
@@ -1099,7 +1210,7 @@ const UserSettingsAdminDialog = ({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Birthday note</label>
+              <label className="text-xs font-medium text-muted-foreground">Birthday note (shown all day)</label>
               <Input
                 value={s.birthdayNote ?? ""}
                 onChange={(e) => setS({ ...s, birthdayNote: e.target.value })}
@@ -1107,7 +1218,64 @@ const UserSettingsAdminDialog = ({
                 className="mt-1 rounded-xl"
               />
             </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">Countdown title</label>
+              <Input
+                value={s.birthdayTitle ?? ""}
+                onChange={(e) => setS({ ...s, birthdayTitle: e.target.value })}
+                placeholder="Counting down to your special day"
+                className="mt-1 rounded-xl"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">Sub-message under title</label>
+              <Textarea
+                rows={2}
+                value={s.birthdayMessage ?? ""}
+                onChange={(e) => setS({ ...s, birthdayMessage: e.target.value })}
+                placeholder="Every moment with you is a gift wrapped in love 🎁"
+                className="mt-1 rounded-xl resize-none text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Sticker</label>
+              <Input
+                value={s.birthdaySticker ?? ""}
+                onChange={(e) => setS({ ...s, birthdaySticker: e.target.value })}
+                placeholder="🎈"
+                maxLength={4}
+                className="mt-1 rounded-xl text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Accent color</label>
+              <div className="mt-1 flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 h-10">
+                <input
+                  type="color"
+                  value={s.birthdayAccent || "#ec4899"}
+                  onChange={(e) => setS({ ...s, birthdayAccent: e.target.value })}
+                  className="w-8 h-6 rounded cursor-pointer bg-transparent"
+                />
+                <span className="text-xs text-muted-foreground flex-1 truncate">{s.birthdayAccent || "default"}</span>
+                {s.birthdayAccent && (
+                  <button type="button" onClick={() => setS({ ...s, birthdayAccent: "" })} className="text-[0.65rem] text-muted-foreground hover:text-destructive">
+                    clear
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
+
+          <label className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/30">
+            <div>
+              <p className="text-sm font-medium">On-this-day notifications</p>
+              <p className="text-[0.65rem] text-muted-foreground">Toast + device notification on matching dates.</p>
+            </div>
+            <Switch
+              checked={s.notificationsEnabled ?? true}
+              onCheckedChange={(v) => setS({ ...s, notificationsEnabled: v })}
+            />
+          </label>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Tab names & visibility</label>
             <div className="mt-2 space-y-2">
