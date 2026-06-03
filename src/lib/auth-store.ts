@@ -26,6 +26,9 @@ export interface User {
   // sanctioned cross-device move is the encrypted vault share flow,
   // which carries its own device id along.
   boundDeviceId?: string;
+  // When true, this profile is shown on the passcode-first login screen
+  // so the user can just tap their avatar and enter the passcode.
+  isDefaultProfile?: boolean;
 }
 
 const USERS_KEY = "vault-users";
