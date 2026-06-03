@@ -16,12 +16,40 @@ import { importEncryptedVault, importLegacyJson } from "@/lib/share-store";
 const Login = () => {
   const navigate = useNavigate();
   const [bootstrap, setBootstrap] = useState(() => listUsers().length === 0);
-  const [step, setStep] = useState<"username" | "passcode">("username");
+  const [defaults, setDefaults] = useState<User[]>(() => listDefaultProfiles());
+  // "quick" = avatar picker → passcode for a default profile.
+  // "username" = classic two-step username + passcode.
+  const [mode, setMode] = useState<"quick" | "username" | "passcode">(
+    () => (listDefaultProfiles().length > 0 ? "quick" : "username"),
+  );
+  const [pickedId, setPickedId] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [profileName, setProfileName] = useState("");
   const [passcode, setPasscode] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const refreshDefaults = () => {
+    const list = listDefaultProfiles();
+    setDefaults(list);
+    if (list.length === 0 && mode === "quick") setMode("username");
+  };
+
+  useEffect(() => {
+    // keep defaults fresh if admin toggled them in another tab
+    const onStorage = () => refreshDefaults();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const pickProfile = (u: User) => {
+    setPickedId(u.id);
+    setUsername(u.username);
+    setProfileName(u.profileName);
+    setPasscode("");
+    setMode("passcode");
+  };
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +60,9 @@ const Login = () => {
       toast.error("Unknown user");
       return;
     }
+    setPickedId(found.id);
     setProfileName(found.profileName);
-    setStep("passcode");
+    setMode("passcode");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,12 +86,75 @@ const Login = () => {
   };
 
   const back = () => {
-    setStep("username");
+    if (defaults.length > 0) {
+      setMode("quick");
+    } else {
+      setMode("username");
+    }
     setPasscode("");
+    setPickedId(null);
   };
 
   if (bootstrap) {
-    return <BootstrapPanel onDone={() => setBootstrap(false)} />;
+    return <BootstrapPanel onDone={() => { setBootstrap(false); refreshDefaults(); }} />;
+  }
+
+  // ── Quick picker: avatar grid of default profiles ──
+  if (mode === "quick") {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-6">
+        <div className="w-full max-w-sm">
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-primary shadow-glow flex items-center justify-center mb-5">
+              <Clock3 className="w-10 h-10 text-primary-foreground" />
+            </div>
+            <h1 className="text-3xl font-bold text-gradient">Timeline</h1>
+            <p className="text-sm text-muted-foreground mt-2 text-center italic">
+              Tap your profile to continue ✨
+            </p>
+          </div>
+
+          <div className="bg-gradient-card rounded-3xl p-5 border border-border shadow-elegant">
+            <div className="grid grid-cols-3 gap-3">
+              {defaults.map((u) => {
+                const initial = (u.profileName || u.username || "U").charAt(0).toUpperCase();
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => pickProfile(u)}
+                    className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-secondary/60 transition active:scale-95"
+                  >
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xl overflow-hidden shadow-glow">
+                      {u.avatarUrl ? (
+                        <img src={u.avatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : u.avatarEmoji ? (
+                        <span className="text-2xl leading-none">{u.avatarEmoji}</span>
+                      ) : (
+                        initial
+                      )}
+                    </div>
+                    <span className="text-xs font-medium truncate max-w-full">{u.profileName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => { setMode("username"); setPickedId(null); setPasscode(""); }}
+            className="mt-5 w-full text-center text-xs text-primary hover:underline"
+          >
+            Switch account · use username + passkey
+          </button>
+
+          <p className="text-xs text-center text-muted-foreground mt-4">
+            🔒 Encrypted locally • Single device session
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (
