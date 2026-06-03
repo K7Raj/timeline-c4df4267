@@ -37,6 +37,11 @@ export interface AppSettings {
   soundEnabled: boolean;
   birthdayDate?: string;
   birthdayNote?: string;
+  birthdayTitle?: string;
+  birthdayMessage?: string;
+  birthdayAccent?: string; // hex like "#ec4899"
+  birthdaySticker?: string; // emoji or short text
+  notificationsEnabled?: boolean; // on-this-day toasts + OS notifications
 }
 
 const KEY = "app-settings-v2";
