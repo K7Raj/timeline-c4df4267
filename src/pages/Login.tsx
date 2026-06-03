@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  createUser, getUserByUsername, listUsers, loginWithUsername,
+  createUser, getUserByUsername, listDefaultProfiles, listUsers,
+  loginWithUsername, type User,
 } from "@/lib/auth-store";
 import { importEncryptedVault, importLegacyJson } from "@/lib/share-store";
 
