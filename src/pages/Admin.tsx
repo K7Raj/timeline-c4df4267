@@ -305,6 +305,18 @@ const Admin = () => {
                         <DropdownMenuSeparator />
                       </>
                     )}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const next = !u.isDefaultProfile;
+                        setDefaultProfile(u.id, next);
+                        toast({ title: next ? `${u.profileName} shown on quick login` : `${u.profileName} hidden from quick login` });
+                        refresh();
+                      }}
+                      className="gap-2 rounded-lg"
+                    >
+                      <UserCircle2 className="w-4 h-4" />
+                      {u.isDefaultProfile ? "Remove from quick login" : "Show on quick login"}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setPwTarget(u)} className="gap-2 rounded-lg">
                       <KeyRound className="w-4 h-4" /> Change passcode
                     </DropdownMenuItem>
