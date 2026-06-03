@@ -164,7 +164,7 @@ const Login = () => {
           <div className="w-20 h-20 rounded-3xl bg-gradient-primary shadow-glow flex items-center justify-center mb-5 animate-pulse">
             <Clock3 className="w-10 h-10 text-primary-foreground" />
           </div>
-          {step === "username" ? (
+          {mode === "username" ? (
             <>
               <h1 className="text-3xl font-bold text-gradient">Timeline</h1>
               <p className="text-sm text-muted-foreground mt-2 text-center italic">
@@ -183,7 +183,7 @@ const Login = () => {
           )}
         </div>
 
-        {step === "username" ? (
+        {mode === "username" ? (
           <form onSubmit={handleNext} className="bg-gradient-card rounded-3xl p-6 shadow-elegant border border-border space-y-5">
             <div className="relative">
               <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
