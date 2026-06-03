@@ -79,6 +79,11 @@ const defaults: AppSettings = {
   soundEnabled: true,
   birthdayDate: "",
   birthdayNote: "Happy Birthday {name} ✨",
+  birthdayTitle: "Counting down to your special day",
+  birthdayMessage: "Every moment with you is a gift wrapped in love 🎁",
+  birthdayAccent: "",
+  birthdaySticker: "🎈",
+  notificationsEnabled: true,
 };
 
 interface Store {
